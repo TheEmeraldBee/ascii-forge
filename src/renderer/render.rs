@@ -1,18 +1,38 @@
-use std::fmt::Display;
+use std::{fmt::Display, marker::PhantomData};
 
 use crossterm::style::StyledContent;
 
-use crate::{buffer::Buffer, math::Vec2};
+use crate::prelude::*;
 
+/// A macro to simplify rendering lots of items at once.
+/// The Buffer can be anything that implements AsMut<Buffer>
+/**
+`Example`
+```rust, no_run
+use crate::prelude::*;
+
+// Create a window
+let window = Window::init()?;
+
+// Render This works! and Another Element! To the window's buffer
+render!(
+    window, [
+        (16, 16) => "This works!",
+        (0, 0) => "Another Element!"
+    ]
+)
+```
+*/
 #[macro_export]
 macro_rules! render {
     ($buffer:expr, [$($loc:expr => $render:expr),* $(,)?]) => {
         $(
-            $render.render($loc, $buffer);
+            $render.render($loc, $buffer.as_mut());
         )*
     };
 }
 
+/// The main system that will render an element at a location to the buffer.
 pub trait Render {
     fn render(&self, loc: Vec2, buffer: &mut Buffer);
 }
@@ -35,6 +55,28 @@ impl Render for &str {
             loc.y += 1;
             loc.x = base_x;
         }
+    }
+}
+
+/// A Render type that doesn't get split. It purely renders the one item to the screen.
+/// Useful for multi-character emojis.
+pub struct CharString<D: Display, F: Into<StyledContent<D>> + Clone> {
+    pub text: F,
+    marker: PhantomData<D>,
+}
+
+impl<D: Display, F: Into<StyledContent<D>> + Clone> CharString<D, F> {
+    pub fn new(text: F) -> Self {
+        Self {
+            text,
+            marker: PhantomData {},
+        }
+    }
+}
+
+impl<D: Display, F: Into<StyledContent<D>> + Clone> Render for CharString<D, F> {
+    fn render(&self, loc: Vec2, buffer: &mut Buffer) {
+        render!(buffer, [loc => Cell::style(self.text.clone().into())]);
     }
 }
 

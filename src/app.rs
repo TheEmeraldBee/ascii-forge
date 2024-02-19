@@ -5,6 +5,8 @@ use crate::{
     scene::SceneRet,
 };
 
+/// Handles all requirements for running an application, like creating the window,
+/// handling panics, and running a scene set.
 pub fn app(scene: impl SceneRet) -> Result<(), Box<dyn Error>> {
     let mut window = Window::init()?;
     handle_panics();

@@ -3,6 +3,9 @@ use std::fmt::Display;
 use compact_str::{CompactString, ToCompactString};
 use crossterm::style::{ContentStyle, StyledContent};
 
+use crate::prelude::Render;
+
+/// A cell that stores a symbol, and the style that will be applied to it.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Cell {
     text: CompactString,
@@ -11,7 +14,7 @@ pub struct Cell {
 
 impl Default for Cell {
     fn default() -> Self {
-        Self::string(" ")
+        Self::chr(' ')
     }
 }
 
@@ -42,6 +45,16 @@ impl Cell {
             text: CompactString::new(format!("{}", content.content())),
             style: *content.style(),
         }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.text.trim().is_empty()
+    }
+}
+
+impl Render for Cell {
+    fn render(&self, loc: crate::prelude::Vec2, buffer: &mut crate::prelude::Buffer) {
+        buffer.set(loc, self.clone())
     }
 }
 

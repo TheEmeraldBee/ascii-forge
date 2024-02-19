@@ -1,9 +1,6 @@
 pub mod app;
 
-pub mod render;
-
-pub mod buffer;
-pub mod cell;
+pub mod renderer;
 
 pub mod window;
 
@@ -11,4 +8,9 @@ pub mod math;
 
 pub mod scene;
 
+pub mod elements;
+
 pub mod prelude;
+
+// Export required crates
+pub use crossterm;
