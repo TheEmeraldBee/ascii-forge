@@ -131,7 +131,7 @@ impl Window {
     }
 
     /// Handles events, and renders the screen.
-    pub fn update(&mut self) -> io::Result<()> {
+    pub fn update(&mut self, poll: Duration) -> io::Result<()> {
         let cursor_pos = cursor::position()?;
         // Render Window
         self.render()?;
@@ -144,16 +144,16 @@ impl Window {
         self.io.flush()?;
 
         // Poll For Events
-        self.handle_event()?;
+        self.handle_event(poll)?;
 
         Ok(())
     }
 
     /// Handles events. Used automatically by the update method, so no need to use it unless update is being used.
-    pub fn handle_event(&mut self) -> io::Result<()> {
+    pub fn handle_event(&mut self, poll: Duration) -> io::Result<()> {
         self.event = None;
 
-        if event::poll(Duration::ZERO)? {
+        if event::poll(poll)? {
             self.event = Some(event::read()?);
 
             match self.event {

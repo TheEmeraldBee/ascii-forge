@@ -1,6 +1,6 @@
 [package]
 name = "ascii-forge"
-version = "0.0.0"
+version="0.0.0"
 edition = "2021"
 description = "A Minimal TUI Ascii Application Engine that simplifies the use of crossterm"
 readme = "README.md"

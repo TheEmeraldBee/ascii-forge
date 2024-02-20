@@ -1,54 +1,31 @@
-use std::error::Error;
+use std::{io, time::Duration};
 
-use ascii_forge::prelude::crossterm::{cursor, event::KeyCode, style::Stylize};
 use ascii_forge::prelude::*;
 
-// Create the main scene.
-pub struct MainScene;
+fn main() -> io::Result<()> {
+    // Will init the window for you, handling all required procedures.
+    let mut window = Window::init()?;
 
-impl Scene for MainScene {
-    fn run(&mut self, window: &mut Window) -> Result<SceneResult, Box<dyn Error>> {
-        // Set up a scene
-        let mut ui_buffer = Buffer::new((6, 3));
+    // Ask the system to handle panics for us.
+    handle_panics();
 
-        let chars = ['┌', '─', '┐', '│', ' ', '│', '└', '─', '┘'];
-        let nine_slice = ui::NineSlice::new(chars, (6, 3));
+    loop {
+        // Ask the window to draw, handle events, and fix sizing issues.
+        // Duration is the time for which to poll events before re-rendering.
+        window.update(Duration::from_millis(200))?;
 
-        // Render Some elements to the buffer.
-        render!(ui_buffer, [
-            vec2(0, 0) => nine_slice,
-            vec2(1, 1) => "QUIT".green()
+        // Render elements to the window
+        render!(window, [
+            vec2(0, 0) => "Hello World!",
+            vec2(0, 1) => "Press `Enter` to exit!".red(),
         ]);
 
-        // Loop the current scene.
-        loop {
-            window.update()?;
-
-            // Renders some elements to the window.
-            render!(window, [
-                vec2(0, 0) => format!("{:?}", cursor::position()?),
-                vec2(window.size().x / 2, window.size().y / 4) => ui_buffer,
-            ]);
-
-            // If the `q` key was pressed, quit the application by returning no scene.
-            if window.code(KeyCode::Char('q')) {
-                return Ok(None);
-            }
-
-            // If the buffer was clicked on, quit.
-            if window.mouse(MouseEventKind::Down(MouseButton::Left))?
-                && window.hover(
-                    vec2(window.size().x / 2, window.size().y / 4),
-                    ui_buffer.size(),
-                )?
-            {
-                return Ok(None);
-            }
+        // Check if the Enter Key was pressed, and exit the app if it was.
+        if window.code(KeyCode::Enter) {
+            break;
         }
     }
-}
 
-fn main() -> Result<(), Box<dyn Error>> {
-    // Run the application, with the given starting scene.
-    app(MainScene)
+    // Crucial to call before exiting the program, as otherwise you will not leave the alternate screen.
+    window.restore()
 }
