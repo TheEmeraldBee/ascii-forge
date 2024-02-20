@@ -45,6 +45,9 @@ pub struct Window {
 
     // Input Helpers,
     mouse_pos: Vec2,
+
+    // Inlining
+    inline: bool,
 }
 
 impl Default for Window {
@@ -64,7 +67,30 @@ impl Window {
             event: None,
 
             mouse_pos: vec2(0, 0),
+
+            inline: false,
         })
+    }
+
+    /// Creates a new window built for inline using the given Stdout and height.
+    pub fn new_inline(io: io::Stdout, height: u16) -> io::Result<Self> {
+        let size = vec2(size()?.0, height);
+        Ok(Self {
+            io,
+            buffers: [Buffer::new(size), Buffer::new(size)],
+            active_buffer: 0,
+            event: None,
+
+            mouse_pos: vec2(0, 0),
+
+            inline: true,
+        })
+    }
+
+    /// Initializes a window that is prepared for inline rendering.
+    pub fn init_inline(height: u16) -> io::Result<Self> {
+        let stdout = io::stdout();
+        Window::new_inline(stdout, height)
     }
 
     /// Initializes the window, and returns a new Window for your use.
@@ -120,12 +146,51 @@ impl Window {
         Ok(())
     }
 
+    /// Inline only function
+    /// Prepares the window for inline rendering.
+    pub fn prepare(&mut self) -> io::Result<()> {
+        assert!(self.inline);
+
+        // Make room for the inline
+        print!("{}", "\n".repeat(self.buffer().size().y as usize));
+
+        enable_raw_mode()?;
+        execute!(self.io, EnableMouseCapture, EnableFocusChange)
+    }
+
+    /// Inline only function
+    /// Resets the window to function with regular printing.
+    pub fn reset(&mut self) -> io::Result<()> {
+        assert!(self.inline);
+
+        execute!(self.io, DisableMouseCapture, DisableFocusChange)?;
+        disable_raw_mode()
+    }
+
     /// Renders the window to the screen. should really only be used by the update method, but if you need a custom system, you can use this.
     pub fn render(&mut self) -> io::Result<()> {
-        for (loc, cell) in
-            self.buffers[1 - self.active_buffer].diff(&self.buffers[self.active_buffer])
-        {
-            queue!(self.io, cursor::MoveTo(loc.x, loc.y), Print(cell))?;
+        if self.inline {
+            let window_height = size()?.1;
+
+            for (loc, cell) in
+                self.buffers[1 - self.active_buffer].diff(&self.buffers[self.active_buffer])
+            {
+                queue!(
+                    self.io,
+                    cursor::MoveTo(
+                        loc.x,
+                        window_height - self.buffers[self.active_buffer].size().y - 2
+                    ),
+                    cursor::MoveDown(loc.y + 1),
+                    Print(cell),
+                )?;
+            }
+        } else {
+            for (loc, cell) in
+                self.buffers[1 - self.active_buffer].diff(&self.buffers[self.active_buffer])
+            {
+                queue!(self.io, cursor::MoveTo(loc.x, loc.y), Print(cell))?;
+            }
         }
         Ok(())
     }
@@ -133,6 +198,7 @@ impl Window {
     /// Handles events, and renders the screen.
     pub fn update(&mut self, poll: Duration) -> io::Result<()> {
         let cursor_pos = cursor::position()?;
+
         // Render Window
         self.render()?;
 
@@ -158,7 +224,9 @@ impl Window {
 
             match self.event {
                 Some(Event::Resize(width, height)) => {
-                    self.buffers = [Buffer::new((width, height)), Buffer::new((width, height))]
+                    if !self.inline {
+                        self.buffers = [Buffer::new((width, height)), Buffer::new((width, height))];
+                    }
                 }
                 Some(Event::Mouse(MouseEvent { column, row, .. })) => {
                     self.mouse_pos = vec2(column, row)
