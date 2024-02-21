@@ -66,14 +66,31 @@ impl<E: Render> Player<E> {
     }
 
     pub fn update(&mut self, window: &mut Window) {
-        if window.code(KeyCode::Right) {
+        if window.key(KeyEvent::new_with_kind(
+            KeyCode::Right,
+            KeyModifiers::NONE,
+            KeyEventKind::Press,
+        )) {
             self.input = 1;
+        } else if window.key(KeyEvent::new_with_kind(
+            KeyCode::Right,
+            KeyModifiers::NONE,
+            KeyEventKind::Release,
+        )) {
+            self.input = self.input.min(0);
         }
-        if window.code(KeyCode::Left) {
+        if window.key(KeyEvent::new_with_kind(
+            KeyCode::Left,
+            KeyModifiers::NONE,
+            KeyEventKind::Press,
+        )) {
             self.input = -1;
-        }
-        if window.code(KeyCode::Down) {
-            self.input = 0;
+        } else if window.key(KeyEvent::new_with_kind(
+            KeyCode::Left,
+            KeyModifiers::NONE,
+            KeyEventKind::Release,
+        )) {
+            self.input = self.input.max(0);
         }
 
         self.loc.x = (self.loc.x as i32 + self.input).clamp(0, window.size().x as i32) as u16;
