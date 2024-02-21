@@ -4,10 +4,8 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-fn main() -> io::Result<()> {
+fn progress_bar() -> io::Result<()> {
     let mut window = Window::init_inline(2)?;
-    // Start by asking the terminal to handle if a panic happens.
-    handle_panics();
 
     let timer = SystemTime::now();
     let duration = Duration::from_secs(3);
@@ -44,11 +42,17 @@ fn main() -> io::Result<()> {
         }
     }
 
-    // Reset the window so regular rendering will work again.
-    // When using inline rendering, this should be run whenever you want to regularly render something again.
-    window.restore()?;
+    window.restore()
+}
 
-    println!("Everything working normally again!\nNow go make cool stuff!");
+fn main() -> io::Result<()> {
+    // Start by asking the terminal to handle if a panic happens.
+    handle_panics();
+
+    // Render The Progress bar.
+    progress_bar()?;
+
+    println!("Progress bar complete!");
 
     Ok(())
 }

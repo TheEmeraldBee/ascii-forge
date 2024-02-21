@@ -26,6 +26,7 @@ fn main() -> io::Result<()> {
         }
     }
 
-    // Crucial to call before exiting the program, as otherwise you will not leave the alternate screen.
+    // Restore the window, enabling the window to function normally again
+    // If nothing will be run after this, once the window is dropped, this will be run implicitly.
     window.restore()
 }

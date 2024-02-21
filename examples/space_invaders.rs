@@ -152,6 +152,7 @@ pub fn main() -> io::Result<()> {
     let result = app(&mut window);
 
     // Restore the previous screen on the terminal
+    // Since a print statement will come after this, we want to restore the window.
     window.restore()?;
 
     // Now check if error
