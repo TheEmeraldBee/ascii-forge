@@ -221,9 +221,17 @@ impl Window {
     pub fn render(&mut self) -> io::Result<()> {
         if self.inline.is_some() {
             if !self.inline.as_ref().expect("Inline should be some").active {
+                // Make room for the inline render
+                print!("{}", "\n".repeat(self.buffer().size().y as usize));
+
                 enable_raw_mode()?;
 
-                execute!(self.io, EnableMouseCapture, EnableFocusChange)?;
+                execute!(
+                    self.io,
+                    EnableMouseCapture,
+                    EnableFocusChange,
+                    DisableLineWrap
+                )?;
 
                 if self.supports().keyboard() {
                     execute!(
@@ -237,9 +245,6 @@ impl Window {
                     )?;
                 }
 
-                // Make room for the inline render
-                print!("{}", "\n".repeat(self.buffer().size().y as usize));
-
                 self.inline.as_mut().expect("Inline should be some").active = true;
                 self.inline.as_mut().expect("Inline should be some").start = cursor::position()?.1;
             }
@@ -252,9 +257,9 @@ impl Window {
                     cursor::MoveTo(
                         loc.x,
                         self.inline.as_ref().expect("Inline should be some").start
+                            - self.buffers[self.active_buffer].size().y
+                            + loc.y
                     ),
-                    cursor::MoveUp(self.buffers[self.active_buffer].size().y),
-                    cursor::MoveDown(loc.y + 1),
                     Print(cell),
                 )?;
             }
