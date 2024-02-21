@@ -12,7 +12,3 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 compact_str = "0.7.1"
 crossterm = "0.27.0"
-
-[features]
-default = ["elements"]
-elements = []

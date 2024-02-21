@@ -14,6 +14,11 @@ use crossterm::{
 
 use crate::prelude::*;
 
+#[derive(Default)]
+pub struct Inline {
+    active: bool,
+}
+
 impl AsMut<Buffer> for Window {
     fn as_mut(&mut self) -> &mut Buffer {
         self.buffer_mut()
@@ -47,7 +52,7 @@ pub struct Window {
     mouse_pos: Vec2,
 
     // Inlining
-    inline: bool,
+    inline: Option<Inline>,
 }
 
 impl Default for Window {
@@ -68,7 +73,7 @@ impl Window {
 
             mouse_pos: vec2(0, 0),
 
-            inline: false,
+            inline: None,
         })
     }
 
@@ -83,7 +88,7 @@ impl Window {
 
             mouse_pos: vec2(0, 0),
 
-            inline: true,
+            inline: Some(Inline::default()),
         })
     }
 
@@ -132,44 +137,38 @@ impl Window {
     }
 
     /// Restores the window to it's previous state from before the window's init method.
-    pub fn restore(mut self) -> io::Result<()> {
-        disable_raw_mode()?;
-        execute!(
-            self.io,
-            LeaveAlternateScreen,
-            DisableMouseCapture,
-            DisableFocusChange,
-            Show,
-            EnableLineWrap,
-        )?;
+    /// If the window is inline, restore the inline render
+    pub fn restore(&mut self) -> io::Result<()> {
+        if self.inline.is_some() {
+            execute!(self.io, DisableMouseCapture, DisableFocusChange)?;
+            disable_raw_mode()
+        } else {
+            disable_raw_mode()?;
+            execute!(
+                self.io,
+                LeaveAlternateScreen,
+                DisableMouseCapture,
+                DisableFocusChange,
+                Show,
+                EnableLineWrap,
+            )?;
 
-        Ok(())
-    }
-
-    /// Inline only function
-    /// Prepares the window for inline rendering.
-    pub fn prepare(&mut self) -> io::Result<()> {
-        assert!(self.inline);
-
-        // Make room for the inline
-        print!("{}", "\n".repeat(self.buffer().size().y as usize));
-
-        enable_raw_mode()?;
-        execute!(self.io, EnableMouseCapture, EnableFocusChange)
-    }
-
-    /// Inline only function
-    /// Resets the window to function with regular printing.
-    pub fn reset(&mut self) -> io::Result<()> {
-        assert!(self.inline);
-
-        execute!(self.io, DisableMouseCapture, DisableFocusChange)?;
-        disable_raw_mode()
+            Ok(())
+        }
     }
 
     /// Renders the window to the screen. should really only be used by the update method, but if you need a custom system, you can use this.
     pub fn render(&mut self) -> io::Result<()> {
-        if self.inline {
+        if self.inline.is_some() {
+            if !self.inline.as_ref().expect("Inline should be some").active {
+                // Make room for the inline render
+                print!("{}", "\n".repeat(self.buffer().size().y as usize));
+
+                enable_raw_mode()?;
+                execute!(self.io, EnableMouseCapture, EnableFocusChange)?;
+
+                self.inline.as_mut().expect("Inline should be some").active = true;
+            }
             let window_height = size()?.1;
 
             for (loc, cell) in
@@ -224,7 +223,7 @@ impl Window {
 
             match self.event {
                 Some(Event::Resize(width, height)) => {
-                    if !self.inline {
+                    if self.inline.is_none() {
                         self.buffers = [Buffer::new((width, height)), Buffer::new((width, height))];
                     }
                 }
@@ -295,4 +294,10 @@ pub fn handle_panics() {
             .expect("Window should have exited for panic");
         original_hook(e);
     }))
+}
+
+impl Drop for Window {
+    fn drop(&mut self) {
+        self.restore().expect("Restoration should have succeded");
+    }
 }

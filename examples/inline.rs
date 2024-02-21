@@ -12,9 +12,6 @@ fn main() -> io::Result<()> {
     let timer = SystemTime::now();
     let duration = Duration::from_secs(3);
 
-    // Prepare the window for inline rendering
-    window.prepare()?;
-
     // The Inline Render Loop
     loop {
         // Render's the Window and captures events
@@ -48,7 +45,8 @@ fn main() -> io::Result<()> {
     }
 
     // Reset the window so regular rendering will work again.
-    window.reset()?;
+    // When using inline rendering, this should be run whenever you want to regularly render something again.
+    window.restore()?;
 
     println!("Everything working normally again!\nNow go make cool stuff!");
 
