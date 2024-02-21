@@ -20,6 +20,12 @@ pub struct Supports {
     keyboard: bool,
 }
 
+impl Supports {
+    pub fn keyboard(&self) -> bool {
+        self.keyboard
+    }
+}
+
 impl Default for Supports {
     fn default() -> Self {
         Self {
@@ -28,15 +34,10 @@ impl Default for Supports {
     }
 }
 
-impl Supports {
-    pub fn keyboard(&self) -> bool {
-        self.keyboard
-    }
-}
-
 #[derive(Default)]
 pub struct Inline {
     active: bool,
+    start: u16,
 }
 
 impl AsMut<Buffer> for Window {
@@ -120,6 +121,7 @@ impl Window {
     }
 
     /// Initializes a window that is prepared for inline rendering.
+    /// Height is the number of columns that your terminal will need.
     pub fn init_inline(height: u16) -> io::Result<Self> {
         let stdout = io::stdout();
 
@@ -193,10 +195,13 @@ impl Window {
                 self.io,
                 DisableMouseCapture,
                 DisableFocusChange,
-                PopKeyboardEnhancementFlags
+                PopKeyboardEnhancementFlags,
             )?;
 
-            disable_raw_mode()
+            println!();
+
+            disable_raw_mode()?;
+            Ok(())
         } else {
             execute!(
                 self.io,
@@ -216,9 +221,6 @@ impl Window {
     pub fn render(&mut self) -> io::Result<()> {
         if self.inline.is_some() {
             if !self.inline.as_ref().expect("Inline should be some").active {
-                // Make room for the inline render
-                print!("{}", "\n".repeat(self.buffer().size().y as usize));
-
                 enable_raw_mode()?;
 
                 execute!(self.io, EnableMouseCapture, EnableFocusChange)?;
@@ -235,9 +237,12 @@ impl Window {
                     )?;
                 }
 
+                // Make room for the inline render
+                print!("{}", "\n".repeat(self.buffer().size().y as usize));
+
                 self.inline.as_mut().expect("Inline should be some").active = true;
+                self.inline.as_mut().expect("Inline should be some").start = cursor::position()?.1;
             }
-            let window_height = size()?.1;
 
             for (loc, cell) in
                 self.buffers[1 - self.active_buffer].diff(&self.buffers[self.active_buffer])
@@ -246,8 +251,9 @@ impl Window {
                     self.io,
                     cursor::MoveTo(
                         loc.x,
-                        window_height - self.buffers[self.active_buffer].size().y - 2
+                        self.inline.as_ref().expect("Inline should be some").start
                     ),
+                    cursor::MoveUp(self.buffers[self.active_buffer].size().y),
                     cursor::MoveDown(loc.y + 1),
                     Print(cell),
                 )?;
