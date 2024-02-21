@@ -52,8 +52,3 @@ fn main() -> io::Result<()> {
 # Documentation
 - [docs.rs](https://docs.rs/ascii-forge/latest/ascii_forge/)
 - Wiki Coming Soon!
-
-# Goals
-- [ ] More features for actual UI development
-- [ ] Reduce required features for the base engine.
-- [ ] Macro to adjust main function similar to that seen in [macroquad](https://github.com/not-fl3/macroquad)
