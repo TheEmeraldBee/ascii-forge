@@ -3,7 +3,7 @@ use std::fmt::Display;
 use compact_str::{CompactString, ToCompactString};
 use crossterm::style::{ContentStyle, StyledContent};
 
-use crate::prelude::Render;
+use crate::{math::Vec2, prelude::Render};
 
 /// A cell that stores a symbol, and the style that will be applied to it.
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -53,8 +53,9 @@ impl Cell {
 }
 
 impl Render for Cell {
-    fn render(&self, loc: crate::prelude::Vec2, buffer: &mut crate::prelude::Buffer) {
-        buffer.set(loc, self.clone())
+    fn render(&self, loc: crate::prelude::Vec2, buffer: &mut crate::prelude::Buffer) -> Vec2 {
+        buffer.set(loc, self.clone());
+        loc
     }
 }
 

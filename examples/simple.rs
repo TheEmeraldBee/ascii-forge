@@ -18,6 +18,12 @@ fn main() -> io::Result<()> {
         render!(window, [
             vec2(0, 0) => "Hello World!",
             vec2(0, 1) => "Press `Enter` to exit!".red(),
+            vec2(0, 2) => vec![
+                "Multiple ".green(),
+                "Styles ".yellow(),
+                "Per ".green(),
+                "Line ".red(),
+            ]
         ]);
 
         // Check if the Enter Key was pressed, and exit the app if it was.

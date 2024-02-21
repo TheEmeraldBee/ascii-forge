@@ -6,11 +6,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut event = Event::FocusGained;
     let mut window = Window::init()?;
 
-    if !window.supports().keyboard() {
-        window.restore()?;
-        eprintln!("This game does not support this terminal.\nIf Curious, look up terminals that support the kitty keyboard protocol");
-        return Err("Terminal Unsupported".into());
-    }
+    // Require the window to support kitty keyboard protocol
+    window.supports().keyboard()?;
 
     loop {
         window.update(Duration::ZERO)?;

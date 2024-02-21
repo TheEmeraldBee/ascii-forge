@@ -25,36 +25,49 @@ render!(
 */
 #[macro_export]
 macro_rules! render {
-    ($buffer:expr, [$($loc:expr => $render:expr),* $(,)?]) => {
+    ($buffer:expr, [$($loc:expr => $render:expr),* $(,)?]) => {{
+        #[allow(unused_mut)]
+        let mut loc;
         $(
-            $render.render($loc, $buffer.as_mut());
+            loc = $render.render($loc, $buffer.as_mut());
         )*
-    };
+        loc
+    }};
 }
 
 /// The main system that will render an element at a location to the buffer.
+/// Render's return type is the location the render ended at.
 pub trait Render {
-    fn render(&self, loc: Vec2, buffer: &mut Buffer);
+    fn render(&self, loc: Vec2, buffer: &mut Buffer) -> Vec2;
 }
 
 /* --------------- Implementations --------------- */
 impl Render for char {
-    fn render(&self, loc: Vec2, buffer: &mut Buffer) {
-        buffer.set(loc, *self)
+    fn render(&self, loc: Vec2, buffer: &mut Buffer) -> Vec2 {
+        buffer.set(loc, *self);
+        loc
     }
 }
 
 impl Render for &str {
-    fn render(&self, mut loc: Vec2, buffer: &mut Buffer) {
-        let base_x = loc.x;
-        for line in self.split('\n') {
-            for chr in line.chars().collect::<Vec<char>>() {
-                buffer.set(loc, chr);
-                loc.x += 1;
-            }
-            loc.y += 1;
-            loc.x = base_x;
+    fn render(&self, loc: Vec2, buffer: &mut Buffer) -> Vec2 {
+        render!(buffer, [loc => StyledContent::new(ContentStyle::default(), self)])
+    }
+}
+
+impl<R: Render + 'static> From<R> for Box<dyn Render> {
+    fn from(value: R) -> Self {
+        Box::new(value)
+    }
+}
+
+impl<R: Into<Box<dyn Render>> + Clone> Render for Vec<R> {
+    fn render(&self, mut loc: Vec2, buffer: &mut Buffer) -> Vec2 {
+        let items: Vec<Box<dyn Render>> = self.iter().map(|x| x.clone().into()).collect();
+        for item in items {
+            loc = render!(buffer, [loc => item]);
         }
+        loc
     }
 }
 
@@ -75,39 +88,29 @@ impl<D: Display, F: Into<StyledContent<D>> + Clone> CharString<D, F> {
 }
 
 impl<D: Display, F: Into<StyledContent<D>> + Clone> Render for CharString<D, F> {
-    fn render(&self, loc: Vec2, buffer: &mut Buffer) {
-        render!(buffer, [loc => Cell::style(self.text.clone().into())]);
+    fn render(&self, loc: Vec2, buffer: &mut Buffer) -> Vec2 {
+        render!(buffer, [loc => Cell::style(self.text.clone().into())])
     }
 }
 
 impl Render for String {
-    fn render(&self, loc: Vec2, buffer: &mut Buffer) {
-        render!(buffer, [loc => self.as_str()]);
-    }
-}
-
-impl Render for Vec<String> {
-    fn render(&self, loc: Vec2, buffer: &mut Buffer) {
-        render!(buffer, [loc => self.join("\n")]);
-    }
-}
-
-impl Render for Vec<&str> {
-    fn render(&self, loc: Vec2, buffer: &mut Buffer) {
-        render!(buffer, [loc => self.join("\n")]);
+    fn render(&self, loc: Vec2, buffer: &mut Buffer) -> Vec2 {
+        render!(buffer, [loc => self.as_str()])
     }
 }
 
 impl<D: Display> Render for StyledContent<D> {
-    fn render(&self, mut loc: Vec2, buffer: &mut Buffer) {
+    fn render(&self, mut loc: Vec2, buffer: &mut Buffer) -> Vec2 {
         let base_x = loc.x;
         for line in format!("{}", self.content()).split('\n') {
-            for char in line.trim().chars().collect::<Vec<char>>() {
+            loc.x = base_x;
+            for char in line.chars().collect::<Vec<char>>() {
                 buffer.set(loc, StyledContent::new(*self.style(), char));
                 loc.x += 1;
             }
             loc.y += 1;
-            loc.x = base_x;
         }
+        loc.y -= 1;
+        loc
     }
 }

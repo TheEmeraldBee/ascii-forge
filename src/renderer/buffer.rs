@@ -144,7 +144,7 @@ impl Buffer {
 }
 
 impl Render for Buffer {
-    fn render(&self, loc: Vec2, buffer: &mut Buffer) {
+    fn render(&self, loc: Vec2, buffer: &mut Buffer) -> Vec2 {
         for x in 0..self.size.x {
             if x + loc.x >= buffer.size.x {
                 break;
@@ -160,5 +160,6 @@ impl Render for Buffer {
                 buffer.set(dest, self.get(vec2(x, y)).clone());
             }
         }
+        vec2(loc.x + buffer.size().x, loc.y + buffer.size().y)
     }
 }

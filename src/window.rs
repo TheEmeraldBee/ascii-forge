@@ -21,8 +21,14 @@ pub struct Supports {
 }
 
 impl Supports {
-    pub fn keyboard(&self) -> bool {
-        self.keyboard
+    pub fn keyboard(&self) -> io::Result<()> {
+        match self.keyboard {
+            true => Ok(()),
+            false => Err(io::Error::new(
+                io::ErrorKind::Unsupported,
+                "Terminal Type Not Supported: Kitty keyboard protocol not implemented.",
+            )),
+        }
     }
 }
 
@@ -148,7 +154,7 @@ impl Window {
         )?;
 
         // Enable keyboard enhancement if the terminal supports it.
-        if Supports::default().keyboard() {
+        if Supports::default().keyboard().is_ok() {
             queue!(
                 stdout,
                 PushKeyboardEnhancementFlags(
@@ -187,7 +193,7 @@ impl Window {
     /// Restores the window to it's previous state from before the window's init method.
     /// If the window is inline, restore the inline render
     pub fn restore(&mut self) -> io::Result<()> {
-        if self.supports().keyboard() {
+        if self.supports().keyboard().is_ok() {
             queue!(self.io, PopKeyboardEnhancementFlags)?;
         }
         if self.inline.is_some() {
@@ -233,7 +239,7 @@ impl Window {
                     DisableLineWrap
                 )?;
 
-                if self.supports().keyboard() {
+                if self.supports().keyboard().is_ok() {
                     execute!(
                         self.io,
                         PushKeyboardEnhancementFlags(
