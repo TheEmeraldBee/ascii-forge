@@ -10,6 +10,7 @@ use crossterm::{
     execute, queue,
     style::Print,
     terminal::{self, *},
+    tty::IsTty,
 };
 
 use crate::prelude::*;
@@ -122,31 +123,40 @@ impl Window {
     pub fn init_inline(height: u16) -> io::Result<Self> {
         let stdout = io::stdout();
 
+        assert!(stdout.is_tty());
+
         Window::new_inline(stdout, height)
     }
 
     /// Initializes the window, and returns a new Window for your use.
     pub fn init() -> io::Result<Self> {
+        enable_raw_mode()?;
+
         let mut stdout = io::stdout();
 
-        // Enable keyboard enhancement if the terminal supports it.
-        if Supports::default().keyboard() {
-            execute!(
-                stdout,
-                PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::all()),
-            )?;
-        }
+        assert!(stdout.is_tty());
 
-        enable_raw_mode()?;
         execute!(
             stdout,
-            PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::all()),
             EnterAlternateScreen,
             EnableMouseCapture,
             EnableFocusChange,
             Hide,
             DisableLineWrap,
         )?;
+
+        // Enable keyboard enhancement if the terminal supports it.
+        if Supports::default().keyboard() {
+            queue!(
+                stdout,
+                PushKeyboardEnhancementFlags(
+                    KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES
+                        | KeyboardEnhancementFlags::REPORT_ALL_KEYS_AS_ESCAPE_CODES
+                        | KeyboardEnhancementFlags::REPORT_ALTERNATE_KEYS
+                        | KeyboardEnhancementFlags::REPORT_EVENT_TYPES
+                ),
+            )?;
+        }
 
         Window::new(stdout)
     }
@@ -175,6 +185,9 @@ impl Window {
     /// Restores the window to it's previous state from before the window's init method.
     /// If the window is inline, restore the inline render
     pub fn restore(&mut self) -> io::Result<()> {
+        if self.supports().keyboard() {
+            queue!(self.io, PopKeyboardEnhancementFlags)?;
+        }
         if self.inline.is_some() {
             execute!(
                 self.io,
@@ -182,9 +195,9 @@ impl Window {
                 DisableFocusChange,
                 PopKeyboardEnhancementFlags
             )?;
+
             disable_raw_mode()
         } else {
-            disable_raw_mode()?;
             execute!(
                 self.io,
                 PopKeyboardEnhancementFlags,
@@ -195,7 +208,7 @@ impl Window {
                 EnableLineWrap,
             )?;
 
-            Ok(())
+            disable_raw_mode()
         }
     }
 
@@ -207,12 +220,18 @@ impl Window {
                 print!("{}", "\n".repeat(self.buffer().size().y as usize));
 
                 enable_raw_mode()?;
+
                 execute!(self.io, EnableMouseCapture, EnableFocusChange)?;
 
                 if self.supports().keyboard() {
                     execute!(
                         self.io,
-                        PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::all()),
+                        PushKeyboardEnhancementFlags(
+                            KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES
+                                | KeyboardEnhancementFlags::REPORT_ALL_KEYS_AS_ESCAPE_CODES
+                                | KeyboardEnhancementFlags::REPORT_ALTERNATE_KEYS
+                                | KeyboardEnhancementFlags::REPORT_EVENT_TYPES
+                        )
                     )?;
                 }
 

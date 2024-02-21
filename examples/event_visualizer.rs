@@ -1,7 +1,6 @@
 use std::{error::Error, time::Duration};
 
 use ascii_forge::prelude::*;
-use crossterm::execute;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut event = Event::FocusGained;
@@ -12,11 +11,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         eprintln!("This game does not support this terminal.\nIf Curious, look up terminals that support the kitty keyboard protocol");
         return Err("Terminal Unsupported".into());
     }
-
-    execute!(
-        window.io(),
-        PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::all())
-    )?;
 
     loop {
         window.update(Duration::ZERO)?;
@@ -36,8 +30,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             break;
         }
     }
-
-    execute!(window.io(), PopKeyboardEnhancementFlags)?;
 
     Ok(())
 }
