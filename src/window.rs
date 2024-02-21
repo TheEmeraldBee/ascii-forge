@@ -9,10 +9,29 @@ use crossterm::{
     event::{self, *},
     execute, queue,
     style::Print,
-    terminal::*,
+    terminal::{self, *},
 };
 
 use crate::prelude::*;
+
+/// Struct that helps report what the terminal supports for you without you having to work with it yourself.
+pub struct Supports {
+    keyboard: bool,
+}
+
+impl Default for Supports {
+    fn default() -> Self {
+        Self {
+            keyboard: terminal::supports_keyboard_enhancement().expect("Terminal should be fine"),
+        }
+    }
+}
+
+impl Supports {
+    pub fn keyboard(&self) -> bool {
+        self.keyboard
+    }
+}
 
 #[derive(Default)]
 pub struct Inline {
@@ -53,6 +72,9 @@ pub struct Window {
 
     // Inlining
     inline: Option<Inline>,
+
+    // Input Support
+    support: Supports,
 }
 
 impl Default for Window {
@@ -74,6 +96,8 @@ impl Window {
             mouse_pos: vec2(0, 0),
 
             inline: None,
+
+            support: Supports::default(),
         })
     }
 
@@ -89,12 +113,15 @@ impl Window {
             mouse_pos: vec2(0, 0),
 
             inline: Some(Inline::default()),
+
+            support: Supports::default(),
         })
     }
 
     /// Initializes a window that is prepared for inline rendering.
     pub fn init_inline(height: u16) -> io::Result<Self> {
         let stdout = io::stdout();
+
         Window::new_inline(stdout, height)
     }
 
@@ -102,9 +129,18 @@ impl Window {
     pub fn init() -> io::Result<Self> {
         let mut stdout = io::stdout();
 
+        // Enable keyboard enhancement if the terminal supports it.
+        if Supports::default().keyboard() {
+            execute!(
+                stdout,
+                PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::all()),
+            )?;
+        }
+
         enable_raw_mode()?;
         execute!(
             stdout,
+            PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::all()),
             EnterAlternateScreen,
             EnableMouseCapture,
             EnableFocusChange,
@@ -140,12 +176,18 @@ impl Window {
     /// If the window is inline, restore the inline render
     pub fn restore(&mut self) -> io::Result<()> {
         if self.inline.is_some() {
-            execute!(self.io, DisableMouseCapture, DisableFocusChange)?;
+            execute!(
+                self.io,
+                DisableMouseCapture,
+                DisableFocusChange,
+                PopKeyboardEnhancementFlags
+            )?;
             disable_raw_mode()
         } else {
             disable_raw_mode()?;
             execute!(
                 self.io,
+                PopKeyboardEnhancementFlags,
                 LeaveAlternateScreen,
                 DisableMouseCapture,
                 DisableFocusChange,
@@ -166,6 +208,13 @@ impl Window {
 
                 enable_raw_mode()?;
                 execute!(self.io, EnableMouseCapture, EnableFocusChange)?;
+
+                if self.supports().keyboard() {
+                    execute!(
+                        self.io,
+                        PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::all()),
+                    )?;
+                }
 
                 self.inline.as_mut().expect("Inline should be some").active = true;
             }
@@ -281,6 +330,10 @@ impl Window {
 
     pub fn io(&mut self) -> &mut Stdout {
         &mut self.io
+    }
+
+    pub fn supports(&self) -> &Supports {
+        &self.support
     }
 }
 

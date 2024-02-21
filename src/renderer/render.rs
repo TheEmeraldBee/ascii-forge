@@ -48,7 +48,7 @@ impl Render for &str {
     fn render(&self, mut loc: Vec2, buffer: &mut Buffer) {
         let base_x = loc.x;
         for line in self.split('\n') {
-            for chr in line.trim().chars().collect::<Vec<char>>() {
+            for chr in line.chars().collect::<Vec<char>>() {
                 buffer.set(loc, chr);
                 loc.x += 1;
             }
