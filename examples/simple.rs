@@ -20,10 +20,10 @@ fn main() -> io::Result<()> {
             vec2(0, 0) => [ "Hello World!" ],
             vec2(0, 1) => [ "Press `Enter` to exit!".red() ],
             vec2(0, 2) => [
-                "Multiple ".green(),
-                "Styles ".yellow(),
-                "Per ".green(),
-                "Line ".red(),
+                "Render ".red(),
+                "Multiple ".yellow(),
+                "Elements ",
+                "In one go!".to_string()
             ],
         );
 
