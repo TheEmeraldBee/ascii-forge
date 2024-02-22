@@ -34,9 +34,9 @@ impl<E: Render> Projectile<E> {
     }
 
     pub fn draw(&self, window: &mut Window) {
-        render!(window, [
+        render!(window, {
             self.draw_loc() => self.element
-        ]);
+        });
     }
 
     pub fn alive(&self, window: &Window) -> bool {
@@ -60,9 +60,9 @@ impl<E: Render> Player<E> {
     }
 
     pub fn draw(&self, window: &mut Window) {
-        render!(window, [
-            self.loc => self.element
-        ]);
+        render!(window,
+            {self.loc => self.element}
+        );
     }
 
     pub fn update(&mut self, window: &mut Window) {
@@ -120,9 +120,9 @@ impl<E: Render> Enemy<E> {
 
     pub fn draw(&mut self, window: &mut Window) {
         render!(
-            window, [
+            window, {
                 self.loc => self.element
-            ]
+            }
         );
     }
 
@@ -268,10 +268,10 @@ pub fn app(window: &mut Window) -> io::Result<String> {
         enemies.iter_mut().for_each(|x| x.draw(window));
 
         render!(
-            window, [
-                vec2(0, 0) => format!("Score: {}", score),
-                vec2(window.size().x - info_text.size().x, 0) => info_text
-            ]
+            window,
+                {vec2(0, 0) => format!("Score: {}", score)}
+                {vec2(window.size().x - info_text.size().x, 0) => info_text}
+
         );
 
         if window.key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL)) {

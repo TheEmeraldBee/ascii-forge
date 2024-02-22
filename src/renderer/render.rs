@@ -6,6 +6,7 @@ use crate::prelude::*;
 
 /// A macro to simplify rendering lots of items at once.
 /// The Buffer can be anything that implements AsMut<Buffer>
+/// This render will return the location of which the last element finished rendering.
 /**
 `Example`
 ```rust, no_run
@@ -16,22 +17,33 @@ let window = Window::init()?;
 
 // Render This works! and Another Element! To the window's buffer
 render!(
-    window, [
-        (16, 16) => "This works!",
-        (0, 0) => "Another Element!"
-    ]
-)
+    window,
+        { vec2(16, 16) => "This works!" }
+        { vec2(0, 0) => "Another Element!" }
+);
 ```
 */
 #[macro_export]
 macro_rules! render {
-    ($buffer:expr, [$($loc:expr => $render:expr),* $(,)?]) => {{
+    ($buffer:expr, $( {$($tt:tt)*} )* ) => {{
         #[allow(unused_mut)]
         let mut loc;
         $(
-            loc = $render.render($loc, $buffer.as_mut());
+            loc = render!($buffer;@element $($tt)*);
         )*
         loc
+    }};
+
+    ($buffer:expr;@element $loc:expr => [$($render:expr),* $(,)?]) => {{
+        #[allow(unused_mut)]
+        let mut loc = $loc;
+        $(loc = $render.render(loc, $buffer.as_mut());)*
+        loc
+    }};
+
+
+    ($buffer:expr;@element $loc:expr => $render:expr) => {{
+        $render.render($loc, $buffer.as_mut())
     }};
 }
 
@@ -51,7 +63,7 @@ impl Render for char {
 
 impl Render for &str {
     fn render(&self, loc: Vec2, buffer: &mut Buffer) -> Vec2 {
-        render!(buffer, [loc => StyledContent::new(ContentStyle::default(), self)])
+        render!(buffer, {loc => StyledContent::new(ContentStyle::default(), self)})
     }
 }
 
@@ -65,7 +77,7 @@ impl<R: Into<Box<dyn Render>> + Clone> Render for Vec<R> {
     fn render(&self, mut loc: Vec2, buffer: &mut Buffer) -> Vec2 {
         let items: Vec<Box<dyn Render>> = self.iter().map(|x| x.clone().into()).collect();
         for item in items {
-            loc = render!(buffer, [loc => item]);
+            loc = render!(buffer, {loc => item});
         }
         loc
     }
@@ -89,13 +101,13 @@ impl<D: Display, F: Into<StyledContent<D>> + Clone> CharString<D, F> {
 
 impl<D: Display, F: Into<StyledContent<D>> + Clone> Render for CharString<D, F> {
     fn render(&self, loc: Vec2, buffer: &mut Buffer) -> Vec2 {
-        render!(buffer, [loc => Cell::style(self.text.clone().into())])
+        render!(buffer, {loc => Cell::style(self.text.clone().into())})
     }
 }
 
 impl Render for String {
     fn render(&self, loc: Vec2, buffer: &mut Buffer) -> Vec2 {
-        render!(buffer, [loc => self.as_str()])
+        render!(buffer, {loc => self.as_str()})
     }
 }
 
