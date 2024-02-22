@@ -25,22 +25,24 @@ render!(
 */
 #[macro_export]
 macro_rules! render {
-    ($buffer:expr, $( {$($tt:tt)*} )* ) => {{
+    ($buffer:expr, $( $loc:expr => [$($render:expr),* $(,)?]),* $(,)?  ) => {{
         #[allow(unused_mut)]
         let mut loc;
         $(
-            loc = render!($buffer;@element $($tt)*);
+            loc = $loc;
+            $(loc = $render.render(loc, $buffer.as_mut());)*
         )*
         loc
     }};
 
     ($buffer:expr;@element $loc:expr => [$($render:expr),* $(,)?]) => {{
+        let start_loc = $loc;
+
         #[allow(unused_mut)]
         let mut loc = $loc;
         $(loc = $render.render(loc, $buffer.as_mut());)*
         loc
     }};
-
 
     ($buffer:expr;@element $loc:expr => $render:expr) => {{
         $render.render($loc, $buffer.as_mut())
@@ -63,7 +65,7 @@ impl Render for char {
 
 impl Render for &str {
     fn render(&self, loc: Vec2, buffer: &mut Buffer) -> Vec2 {
-        render!(buffer, {loc => StyledContent::new(ContentStyle::default(), self)})
+        render!(buffer, loc => [ StyledContent::new(ContentStyle::default(), self) ])
     }
 }
 
@@ -77,7 +79,7 @@ impl<R: Into<Box<dyn Render>> + Clone> Render for Vec<R> {
     fn render(&self, mut loc: Vec2, buffer: &mut Buffer) -> Vec2 {
         let items: Vec<Box<dyn Render>> = self.iter().map(|x| x.clone().into()).collect();
         for item in items {
-            loc = render!(buffer, {loc => item});
+            loc = render!(buffer, loc => [ item ]);
         }
         loc
     }
@@ -101,13 +103,13 @@ impl<D: Display, F: Into<StyledContent<D>> + Clone> CharString<D, F> {
 
 impl<D: Display, F: Into<StyledContent<D>> + Clone> Render for CharString<D, F> {
     fn render(&self, loc: Vec2, buffer: &mut Buffer) -> Vec2 {
-        render!(buffer, {loc => Cell::style(self.text.clone().into())})
+        render!(buffer, loc => [ Cell::style(self.text.clone().into()) ])
     }
 }
 
 impl Render for String {
     fn render(&self, loc: Vec2, buffer: &mut Buffer) -> Vec2 {
-        render!(buffer, {loc => self.as_str()})
+        render!(buffer, loc => [ self.as_str() ])
     }
 }
 

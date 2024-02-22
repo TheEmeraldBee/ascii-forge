@@ -137,7 +137,7 @@ impl Buffer {
     /// Useful for if you want to store any set of render elements in a custom element.
     pub fn sized_element<R: Render>(item: R) -> Self {
         let mut buff = Buffer::new((100, 100));
-        render!(buff, {vec2(0, 0) => item});
+        render!(buff, vec2(0, 0) => [ item ]);
         buff.shrink();
         buff
     }

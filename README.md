@@ -34,8 +34,8 @@ fn main() -> io::Result<()> {
 
         // Render elements to the window
         render!(window,
-            {vec2(0, 0) => "Hello World!"},
-            {vec2(0, 1) => "Press `Enter` to exit!".red()},
+            vec2(0, 0) => [ "Hello World!" ],
+            vec2(0, 1) => [ "Press `Enter` to exit!".red() ],
         );
 
         // Check if the Enter Key was pressed, and exit the app if it was.

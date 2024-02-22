@@ -5,7 +5,7 @@ pub fn confirmation() -> io::Result<bool> {
     let mut window = Window::init_inline(1)?;
 
     loop {
-        render!(window, {vec2(0, 0) => "Are You Sure? (`y` / `n`)"});
+        render!(window, vec2(0, 0) => [ "Are You Sure? (`y` / `n`)" ]);
 
         if window.code(KeyCode::Char('y')) || window.code(KeyCode::Char('Y')) {
             return Ok(true);

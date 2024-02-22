@@ -15,15 +15,16 @@ fn main() -> io::Result<()> {
         window.update(Duration::from_millis(200))?;
 
         // Render elements to the window
-        render!(window,
-            {vec2(0, 0) => "Hello World!"}
-            {vec2(0, 1) => "Press `Enter` to exit!".red()}
-            {vec2(0, 2) => [
+        render!(
+            window,
+            vec2(0, 0) => [ "Hello World!" ],
+            vec2(0, 1) => [ "Press `Enter` to exit!".red() ],
+            vec2(0, 2) => [
                 "Multiple ".green(),
                 "Styles ".yellow(),
                 "Per ".green(),
                 "Line ".red(),
-            ]}
+            ],
         );
 
         // Check if the Enter Key was pressed, and exit the app if it was.

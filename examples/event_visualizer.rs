@@ -18,8 +18,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         render!(
             window,
-                {vec2(0, 20) => "To Quit, Press Ctrl + C".red()}
-                {vec2(0, 0) => format!("{:#?}", event).replace('\t', "   ")}
+                vec2(0, 20) => [ "To Quit, Press Ctrl + C".red() ],
+                vec2(0, 0) => [ format!("{:#?}", event).replace('\t', "   ") ],
         );
 
         if window.key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL)) {

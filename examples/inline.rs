@@ -31,9 +31,9 @@ fn progress_bar() -> io::Result<()> {
 
         // Render the Progress Bar
         render!(window,
-            {vec2(0, 1) => text_green}
-            {vec2(x, 1) => text_red}
-            {vec2(0, 0) => "Progress"}
+            vec2(0, 1) => [ text_green ],
+            vec2(x, 1) => [ text_red ],
+            vec2(0, 0) => [ "Progress" ],
         );
 
         // End the loop if key is pressed early
