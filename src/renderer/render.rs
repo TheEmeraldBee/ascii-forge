@@ -18,8 +18,8 @@ let window = Window::init()?;
 // Render This works! and Another Element! To the window's buffer
 render!(
     window,
-        { vec2(16, 16) => "This works!" }
-        { vec2(0, 0) => "Another Element!" }
+        vec2(16, 16) => [ "This works!" ]
+        vec2(0, 0) => [ "Another Element!" ]
 );
 ```
 */
@@ -33,19 +33,6 @@ macro_rules! render {
             $(loc = $render.render(loc, $buffer.as_mut());)*
         )*
         loc
-    }};
-
-    ($buffer:expr;@element $loc:expr => [$($render:expr),* $(,)?]) => {{
-        let start_loc = $loc;
-
-        #[allow(unused_mut)]
-        let mut loc = $loc;
-        $(loc = $render.render(loc, $buffer.as_mut());)*
-        loc
-    }};
-
-    ($buffer:expr;@element $loc:expr => $render:expr) => {{
-        $render.render($loc, $buffer.as_mut())
     }};
 }
 
