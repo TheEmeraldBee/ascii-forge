@@ -4,7 +4,7 @@ use ascii_forge::prelude::*;
 
 fn main() -> io::Result<()> {
     // Will init the window for you, handling all required procedures.
-    let mut window = Window::init()?;
+    let mut window = Window::<Input>::init()?;
 
     // Ask the system to handle panics for us.
     handle_panics();

@@ -5,15 +5,14 @@ use std::{
 };
 
 use crossterm::{
-    cursor::{self, Hide, Show},
-    event::{self, *},
+    cursor::{self},
+    event::{self},
     execute, queue,
-    style::Print,
     terminal::{self, *},
     tty::IsTty,
 };
 
-use crate::{input::Input, prelude::*};
+pub use crate::prelude::*;
 
 /// Struct that helps report what the terminal supports for you without you having to work with it yourself.
 pub struct Supports {
@@ -47,7 +46,7 @@ pub struct Inline {
     start: u16,
 }
 
-impl AsMut<Buffer> for Window {
+impl<I: InputTrait + Default> AsMut<Buffer> for Window<I> {
     fn as_mut(&mut self) -> &mut Buffer {
         self.buffer_mut()
     }
@@ -70,7 +69,7 @@ render!(
 )
 ```
 */
-pub struct Window {
+pub struct Window<I: InputTrait + Default> {
     io: io::Stdout,
     buffers: [Buffer; 2],
     active_buffer: usize,
@@ -84,29 +83,24 @@ pub struct Window {
 
     // Input Support
     supports: Supports,
-    input: Input,
+    input: I,
 }
 
-impl Default for Window {
+impl<I: InputTrait + Default> Default for Window<I> {
     fn default() -> Self {
         Self::init().expect("Init should have succeeded")
     }
 }
 
-impl Window {
+impl<I: InputTrait + Default> Window<I> {
     /// Creates a new window from the given stdout.
     /// Please prefer to use init as it will do all of the terminal init stuff.
     pub fn new(io: io::Stdout) -> io::Result<Self> {
         let supports = Supports::default();
 
-        #[allow(unused_mut)]
-        let mut input = Input::default();
+        let mut input = I::default();
 
-        #[cfg(feature = "keyboard")]
-        match supports.keyboard() {
-            Ok(_) => {}
-            Err(_) => input.no_kitty(),
-        }
+        input.setup(&supports)?;
 
         Ok(Self {
             io,
@@ -127,14 +121,9 @@ impl Window {
     pub fn new_inline(io: io::Stdout, height: u16) -> io::Result<Self> {
         let supports = Supports::default();
 
-        #[allow(unused_mut)]
-        let mut input = Input::default();
+        let mut input = I::default();
 
-        #[cfg(feature = "keyboard")]
-        match supports.keyboard() {
-            Ok(_) => {}
-            Err(_) => input.no_kitty(),
-        }
+        input.setup(&supports)?;
 
         let size = vec2(size()?.0, height);
         Ok(Self {
@@ -178,19 +167,6 @@ impl Window {
             Hide,
             DisableLineWrap,
         )?;
-
-        // Enable keyboard enhancement if the terminal supports it.
-        if Supports::default().keyboard().is_ok() {
-            queue!(
-                stdout,
-                PushKeyboardEnhancementFlags(
-                    KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES
-                        | KeyboardEnhancementFlags::REPORT_ALL_KEYS_AS_ESCAPE_CODES
-                        | KeyboardEnhancementFlags::REPORT_ALTERNATE_KEYS
-                        | KeyboardEnhancementFlags::REPORT_EVENT_TYPES
-                ),
-            )?;
-        }
 
         Window::new(stdout)
     }
@@ -355,11 +331,11 @@ impl Window {
         Ok(())
     }
 
-    pub fn input(&self) -> &Input {
+    pub fn input(&self) -> &I {
         &self.input
     }
 
-    pub fn input_mut(&mut self) -> &mut Input {
+    pub fn input_mut(&mut self) -> &mut I {
         &mut self.input
     }
 
@@ -373,7 +349,7 @@ impl Window {
     }
 
     /// Returns true if the mouse cursor is hovering the given rect.
-    pub fn hover<I: Into<Vec2>>(&self, loc: I, size: I) -> io::Result<bool> {
+    pub fn hover<V: Into<Vec2>>(&self, loc: V, size: V) -> io::Result<bool> {
         let loc = loc.into();
         let size = size.into();
 
@@ -395,7 +371,7 @@ impl Window {
 pub fn handle_panics() {
     let original_hook = take_hook();
     set_hook(Box::new(move |e| {
-        Window::new(io::stdout())
+        Window::<Input>::new(io::stdout())
             .expect("Window should have created for panic")
             .restore()
             .expect("Window should have exited for panic");
@@ -403,7 +379,7 @@ pub fn handle_panics() {
     }))
 }
 
-impl Drop for Window {
+impl<I: InputTrait + Default> Drop for Window<I> {
     fn drop(&mut self) {
         self.restore().expect("Restoration should have succeded");
     }

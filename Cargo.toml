@@ -18,8 +18,6 @@ keyboard = []
 
 [[example]]
 name="space_invaders"
-required-features=["keyboard"]
 
 [[example]]
 name="event_visualizer"
-required-features=["keyboard"]

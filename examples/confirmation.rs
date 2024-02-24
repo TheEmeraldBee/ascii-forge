@@ -2,7 +2,7 @@ use ascii_forge::prelude::*;
 use std::{io, time::Duration};
 
 pub fn confirmation() -> io::Result<bool> {
-    let mut window = Window::init_inline(1)?;
+    let mut window = Window::<Input>::init_inline(1)?;
 
     loop {
         render!(window, vec2(0, 0) => [ "Are You Sure? (`y` / `n`)" ]);

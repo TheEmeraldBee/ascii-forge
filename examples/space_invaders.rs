@@ -12,6 +12,8 @@ use std::{
 
 use ascii_forge::prelude::*;
 
+type KittyWindow = Window<KittyInput>;
+
 pub struct Projectile<E: Render> {
     loc: (f32, f32),
     velocity: f32,
@@ -35,13 +37,13 @@ impl<E: Render> Projectile<E> {
         vec2(self.loc.0.floor() as u16, self.loc.1.floor() as u16)
     }
 
-    pub fn draw(&self, window: &mut Window) {
+    pub fn draw(&self, window: &mut KittyWindow) {
         render!(window,
             self.draw_loc() => [ self.element ]
         );
     }
 
-    pub fn alive(&self, window: &Window) -> bool {
+    pub fn alive(&self, window: &KittyWindow) -> bool {
         self.loc.1 >= 2.0 && self.loc.1 < (window.size().y - 2) as f32
     }
 }
@@ -53,7 +55,7 @@ pub struct Player<E: Render> {
 }
 
 impl<E: Render> Player<E> {
-    pub fn new(window: &Window, element: E) -> Self {
+    pub fn new(window: &KittyWindow, element: E) -> Self {
         Self {
             loc: vec2(window.size().x / 2, window.size().y - 3),
             input: 0,
@@ -61,11 +63,11 @@ impl<E: Render> Player<E> {
         }
     }
 
-    pub fn draw(&self, window: &mut Window) {
+    pub fn draw(&self, window: &mut KittyWindow) {
         render!(window, self.loc => [ self.element ]);
     }
 
-    pub fn update(&mut self, window: &mut Window) {
+    pub fn update(&mut self, window: &mut KittyWindow) {
         let input = window.input();
 
         self.input = 0;
@@ -101,7 +103,7 @@ impl<E: Render> Enemy<E> {
         }
     }
 
-    pub fn draw(&mut self, window: &mut Window) {
+    pub fn draw(&mut self, window: &mut KittyWindow) {
         render!(window, self.loc => [ self.element ]);
     }
 
@@ -112,7 +114,7 @@ impl<E: Render> Enemy<E> {
         })
     }
 
-    pub fn enemy_move(&mut self, window: &Window) -> bool {
+    pub fn enemy_move(&mut self, window: &KittyWindow) -> bool {
         if self.loc.y >= window.size().y - 4 {
             true
         } else {
@@ -141,6 +143,7 @@ impl<E: Render> Enemy<E> {
 pub fn main() -> io::Result<()> {
     // Create the window, and ask the engine to catch a panic
     let mut window = Window::init()?;
+    window.supports().keyboard()?;
 
     handle_panics();
 
@@ -160,9 +163,7 @@ pub fn main() -> io::Result<()> {
     Ok(())
 }
 
-pub fn app(window: &mut Window) -> io::Result<String> {
-    window.supports().keyboard()?;
-
+pub fn app(window: &mut KittyWindow) -> io::Result<String> {
     let mut score = 0;
     let mut player = Player::new(window, 'W'.green());
 

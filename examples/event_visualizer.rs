@@ -4,10 +4,7 @@ use ascii_forge::prelude::*;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut event = Event::FocusGained;
-    let mut window = Window::init()?;
-
-    // Require the window to support kitty keyboard protocol
-    window.supports().keyboard()?;
+    let mut window = Window::<KittyInput>::init()?;
 
     loop {
         window.update(Duration::ZERO)?;
