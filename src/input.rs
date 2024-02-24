@@ -139,7 +139,7 @@ impl Input {
 
     #[cfg(not(feature = "keyboard"))]
     pub fn code(&self, code: KeyCode) -> bool {
-        self.keys.contains(&KeyEvent::new(code, KeyModifiers::NONE))
+        self.keys.iter().any(|x| x.code == code)
     }
 
     pub fn mouse_just_pressed(&self, button: &MouseButton) -> bool {
