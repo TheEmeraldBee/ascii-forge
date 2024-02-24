@@ -13,7 +13,7 @@ use crossterm::{
     tty::IsTty,
 };
 
-use crate::prelude::*;
+use crate::{input::Input, prelude::*};
 
 /// Struct that helps report what the terminal supports for you without you having to work with it yourself.
 pub struct Supports {
@@ -21,6 +21,7 @@ pub struct Supports {
 }
 
 impl Supports {
+    /// Returns an error if the terminal doesn't support the kitty keyboard protocol.
     pub fn keyboard(&self) -> io::Result<()> {
         match self.keyboard {
             true => Ok(()),
@@ -73,7 +74,7 @@ pub struct Window {
     io: io::Stdout,
     buffers: [Buffer; 2],
     active_buffer: usize,
-    event: Option<Event>,
+    events: Vec<Event>,
 
     // Input Helpers,
     mouse_pos: Vec2,
@@ -82,7 +83,8 @@ pub struct Window {
     inline: Option<Inline>,
 
     // Input Support
-    support: Supports,
+    supports: Supports,
+    input: Input,
 }
 
 impl Default for Window {
@@ -95,34 +97,58 @@ impl Window {
     /// Creates a new window from the given stdout.
     /// Please prefer to use init as it will do all of the terminal init stuff.
     pub fn new(io: io::Stdout) -> io::Result<Self> {
+        let supports = Supports::default();
+
+        #[allow(unused_mut)]
+        let mut input = Input::default();
+
+        #[cfg(feature = "keyboard")]
+        match supports.keyboard() {
+            Ok(_) => {}
+            Err(_) => input.no_kitty(),
+        }
+
         Ok(Self {
             io,
             buffers: [Buffer::new(size()?), Buffer::new(size()?)],
             active_buffer: 0,
-            event: None,
+            events: vec![],
 
             mouse_pos: vec2(0, 0),
 
             inline: None,
 
-            support: Supports::default(),
+            supports,
+            input,
         })
     }
 
     /// Creates a new window built for inline using the given Stdout and height.
     pub fn new_inline(io: io::Stdout, height: u16) -> io::Result<Self> {
+        let supports = Supports::default();
+
+        #[allow(unused_mut)]
+        let mut input = Input::default();
+
+        #[cfg(feature = "keyboard")]
+        match supports.keyboard() {
+            Ok(_) => {}
+            Err(_) => input.no_kitty(),
+        }
+
         let size = vec2(size()?.0, height);
         Ok(Self {
             io,
             buffers: [Buffer::new(size), Buffer::new(size)],
             active_buffer: 0,
-            event: None,
+            events: vec![],
 
             mouse_pos: vec2(0, 0),
 
             inline: Some(Inline::default()),
 
-            support: Supports::default(),
+            supports,
+            input,
         })
     }
 
@@ -242,17 +268,14 @@ impl Window {
                 if self.supports().keyboard().is_ok() {
                     execute!(
                         self.io,
-                        PushKeyboardEnhancementFlags(
-                            KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES
-                                | KeyboardEnhancementFlags::REPORT_ALL_KEYS_AS_ESCAPE_CODES
-                                | KeyboardEnhancementFlags::REPORT_ALTERNATE_KEYS
-                                | KeyboardEnhancementFlags::REPORT_EVENT_TYPES
-                        )
+                        PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::all())
                     )?;
                 }
 
-                self.inline.as_mut().expect("Inline should be some").active = true;
-                self.inline.as_mut().expect("Inline should be some").start = cursor::position()?.1;
+                let inline = self.inline.as_mut().expect("Inline should be some");
+
+                inline.active = true;
+                inline.start = cursor::position()?.1;
             }
 
             for (loc, cell) in
@@ -301,25 +324,43 @@ impl Window {
 
     /// Handles events. Used automatically by the update method, so no need to use it unless update is being used.
     pub fn handle_event(&mut self, poll: Duration) -> io::Result<()> {
-        self.event = None;
+        self.events = vec![];
+
+        self.input.update();
 
         if event::poll(poll)? {
-            self.event = Some(event::read()?);
+            // Get all queued events
+            while event::poll(Duration::ZERO)? {
+                let event = event::read()?;
 
-            match self.event {
-                Some(Event::Resize(width, height)) => {
-                    if self.inline.is_none() {
-                        self.buffers = [Buffer::new((width, height)), Buffer::new((width, height))];
+                match event {
+                    Event::Resize(width, height) => {
+                        if self.inline.is_none() {
+                            self.buffers =
+                                [Buffer::new((width, height)), Buffer::new((width, height))];
+                        }
                     }
+                    Event::Mouse(MouseEvent { column, row, .. }) => {
+                        self.mouse_pos = vec2(column, row)
+                    }
+                    _ => {}
                 }
-                Some(Event::Mouse(MouseEvent { column, row, .. })) => {
-                    self.mouse_pos = vec2(column, row)
-                }
-                _ => {}
+
+                self.input.register_event(event.clone());
+
+                self.events.push(event);
             }
         }
 
         Ok(())
+    }
+
+    pub fn input(&self) -> &Input {
+        &self.input
+    }
+
+    pub fn input_mut(&mut self) -> &mut Input {
+        &mut self.input
     }
 
     pub fn mouse_pos(&self) -> Vec2 {
@@ -327,21 +368,8 @@ impl Window {
     }
 
     /// Returns the current event for the frame, as a reference.
-    pub fn event(&self) -> &Option<Event> {
-        &self.event
-    }
-
-    /// Returns true if the window had an event with the given mouse input
-    pub fn mouse(&self, event: MouseEventKind) -> io::Result<bool> {
-        if let Some(Event::Mouse(MouseEvent { kind, .. })) = self.event() {
-            if *kind == event {
-                Ok(true)
-            } else {
-                Ok(false)
-            }
-        } else {
-            Ok(false)
-        }
+    pub fn events(&self) -> &Vec<Event> {
+        &self.events
     }
 
     /// Returns true if the mouse cursor is hovering the given rect.
@@ -354,22 +382,12 @@ impl Window {
         Ok(pos.x <= loc.x + size.x && pos.x >= loc.x && pos.y <= loc.y + size.y && pos.y >= loc.y)
     }
 
-    /// Returns true if the given key event is pressed.
-    pub fn key(&self, key: KeyEvent) -> bool {
-        *self.event() == Some(Event::Key(key))
-    }
-
-    /// Returns true if the given key code is pressed.
-    pub fn code(&self, code: KeyCode) -> bool {
-        self.key(KeyEvent::new(code, KeyModifiers::NONE))
-    }
-
     pub fn io(&mut self) -> &mut Stdout {
         &mut self.io
     }
 
     pub fn supports(&self) -> &Supports {
-        &self.support
+        &self.supports
     }
 }
 

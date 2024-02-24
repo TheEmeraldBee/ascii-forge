@@ -1,6 +1,8 @@
 /*
 An Example of Something slightly more complex that could be achieved.
 This is not a complete example, it is not fun, it is purely to show how things COULD be made.
+
+Requires the "keyboard" feature to be enabled
 */
 
 use std::{
@@ -64,31 +66,14 @@ impl<E: Render> Player<E> {
     }
 
     pub fn update(&mut self, window: &mut Window) {
-        if window.key(KeyEvent::new_with_kind(
-            KeyCode::Right,
-            KeyModifiers::NONE,
-            KeyEventKind::Press,
-        )) {
+        let input = window.input();
+
+        self.input = 0;
+        if input.pressed(KeyCode::Right) {
             self.input = 1;
-        } else if window.key(KeyEvent::new_with_kind(
-            KeyCode::Right,
-            KeyModifiers::NONE,
-            KeyEventKind::Release,
-        )) {
-            self.input = self.input.min(0);
         }
-        if window.key(KeyEvent::new_with_kind(
-            KeyCode::Left,
-            KeyModifiers::NONE,
-            KeyEventKind::Press,
-        )) {
+        if input.pressed(KeyCode::Left) {
             self.input = -1;
-        } else if window.key(KeyEvent::new_with_kind(
-            KeyCode::Left,
-            KeyModifiers::NONE,
-            KeyEventKind::Release,
-        )) {
-            self.input = self.input.max(0);
         }
 
         self.loc.x = (self.loc.x as i32 + self.input).clamp(0, window.size().x as i32) as u16;
@@ -156,6 +141,7 @@ impl<E: Render> Enemy<E> {
 pub fn main() -> io::Result<()> {
     // Create the window, and ask the engine to catch a panic
     let mut window = Window::init()?;
+
     handle_panics();
 
     // Run the application
@@ -175,6 +161,8 @@ pub fn main() -> io::Result<()> {
 }
 
 pub fn app(window: &mut Window) -> io::Result<String> {
+    window.supports().keyboard()?;
+
     let mut score = 0;
     let mut player = Player::new(window, 'W'.green());
 
@@ -198,7 +186,7 @@ pub fn app(window: &mut Window) -> io::Result<String> {
         // update the window, without blocking the screen
         window.update(Duration::from_secs_f64(1.0 / 60.0))?;
 
-        if window.code(KeyCode::Char(' ')) {
+        if window.input().just_pressed(KeyCode::Char(' ')) {
             projectiles.push(Projectile::new(
                 vec2(player.loc.x - 1, player.loc.y - 1),
                 -0.3,
@@ -267,7 +255,10 @@ pub fn app(window: &mut Window) -> io::Result<String> {
             vec2(window.size().x - info_text.size().x, 0) => [ info_text ],
         );
 
-        if window.key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL)) {
+        if window
+            .input()
+            .pressed_mod(KeyCode::Char('c'), KeyModifiers::CONTROL)
+        {
             break;
         }
 

@@ -12,7 +12,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     loop {
         window.update(Duration::ZERO)?;
 
-        if let Some(new_event) = window.event() {
+        if let Some(new_event) = window.events().last() {
             event = new_event.clone();
         }
 
@@ -22,7 +22,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                 vec2(0, 0) => [ format!("{:#?}", event).replace('\t', "   ") ],
         );
 
-        if window.key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL)) {
+        if window
+            .input()
+            .pressed_mod(KeyCode::Char('c'), KeyModifiers::CONTROL)
+        {
             break;
         }
     }

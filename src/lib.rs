@@ -6,5 +6,7 @@ pub mod math;
 
 pub mod prelude;
 
+pub mod input;
+
 // Export required crates
 pub use crossterm;

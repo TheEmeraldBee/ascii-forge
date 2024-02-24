@@ -7,10 +7,10 @@ pub fn confirmation() -> io::Result<bool> {
     loop {
         render!(window, vec2(0, 0) => [ "Are You Sure? (`y` / `n`)" ]);
 
-        if window.code(KeyCode::Char('y')) || window.code(KeyCode::Char('Y')) {
+        if window.input().code(KeyCode::Char('y')) || window.input().code(KeyCode::Char('Y')) {
             return Ok(true);
         }
-        if window.code(KeyCode::Char('n')) || window.code(KeyCode::Char('N')) {
+        if window.input().code(KeyCode::Char('n')) || window.input().code(KeyCode::Char('N')) {
             return Ok(false);
         }
 

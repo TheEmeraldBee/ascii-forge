@@ -37,7 +37,10 @@ fn progress_bar() -> io::Result<()> {
         );
 
         // End the loop if key is pressed early
-        if window.key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL)) {
+        if window
+            .input()
+            .pressed(&KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL))
+        {
             break;
         }
     }
