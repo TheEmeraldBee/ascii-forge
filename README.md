@@ -52,7 +52,7 @@ fn main() -> io::Result<()> {
         );
 
         // Check if the Enter Key was pressed, and exit the app if it was.
-        if window.input().code(KeyCode::Enter) {
+        if event!(window, Event::Key(e) => e.code == KeyCode::Enter)
             break;
         }
     }
