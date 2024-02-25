@@ -12,8 +12,6 @@ use std::{
 
 use ascii_forge::prelude::*;
 
-type KittyWindow = Window<KittyInput>;
-
 pub struct Projectile<E: Render> {
     loc: (f32, f32),
     velocity: f32,
@@ -37,13 +35,13 @@ impl<E: Render> Projectile<E> {
         vec2(self.loc.0.floor() as u16, self.loc.1.floor() as u16)
     }
 
-    pub fn draw(&self, window: &mut KittyWindow) {
+    pub fn draw(&self, window: &mut Window) {
         render!(window,
             self.draw_loc() => [ self.element ]
         );
     }
 
-    pub fn alive(&self, window: &KittyWindow) -> bool {
+    pub fn alive(&self, window: &Window) -> bool {
         self.loc.1 >= 2.0 && self.loc.1 < (window.size().y - 2) as f32
     }
 }
@@ -55,7 +53,7 @@ pub struct Player<E: Render> {
 }
 
 impl<E: Render> Player<E> {
-    pub fn new(window: &KittyWindow, element: E) -> Self {
+    pub fn new(window: &Window, element: E) -> Self {
         Self {
             loc: vec2(window.size().x / 2, window.size().y - 3),
             input: 0,
@@ -63,18 +61,16 @@ impl<E: Render> Player<E> {
         }
     }
 
-    pub fn draw(&self, window: &mut KittyWindow) {
+    pub fn draw(&self, window: &mut Window) {
         render!(window, self.loc => [ self.element ]);
     }
 
-    pub fn update(&mut self, window: &mut KittyWindow) {
-        let input = window.input();
-
+    pub fn update(&mut self, window: &mut Window) {
         self.input = 0;
-        if input.pressed(KeyCode::Right) {
+        if event!(window, Event::Key(e) => e.code == KeyCode::Right) {
             self.input = 1;
         }
-        if input.pressed(KeyCode::Left) {
+        if event!(window, Event::Key(e) => e.code == KeyCode::Right) {
             self.input = -1;
         }
 
@@ -103,7 +99,7 @@ impl<E: Render> Enemy<E> {
         }
     }
 
-    pub fn draw(&mut self, window: &mut KittyWindow) {
+    pub fn draw(&mut self, window: &mut Window) {
         render!(window, self.loc => [ self.element ]);
     }
 
@@ -114,7 +110,7 @@ impl<E: Render> Enemy<E> {
         })
     }
 
-    pub fn enemy_move(&mut self, window: &KittyWindow) -> bool {
+    pub fn enemy_move(&mut self, window: &Window) -> bool {
         if self.loc.y >= window.size().y - 4 {
             true
         } else {
@@ -143,7 +139,9 @@ impl<E: Render> Enemy<E> {
 pub fn main() -> io::Result<()> {
     // Create the window, and ask the engine to catch a panic
     let mut window = Window::init()?;
-    window.supports().keyboard()?;
+
+    // Require kitty keyboard support to be enabled.
+    window.keyboard()?;
 
     handle_panics();
 
@@ -163,7 +161,7 @@ pub fn main() -> io::Result<()> {
     Ok(())
 }
 
-pub fn app(window: &mut KittyWindow) -> io::Result<String> {
+pub fn app(window: &mut Window) -> io::Result<String> {
     let mut score = 0;
     let mut player = Player::new(window, 'W'.green());
 
@@ -187,7 +185,7 @@ pub fn app(window: &mut KittyWindow) -> io::Result<String> {
         // update the window, without blocking the screen
         window.update(Duration::from_secs_f64(1.0 / 60.0))?;
 
-        if window.input().just_pressed(KeyCode::Char(' ')) {
+        if event!(window, Event::Key(e) => e.code == KeyCode::Char(' ')) {
             projectiles.push(Projectile::new(
                 vec2(player.loc.x - 1, player.loc.y - 1),
                 -0.3,
@@ -256,9 +254,7 @@ pub fn app(window: &mut KittyWindow) -> io::Result<String> {
             vec2(window.size().x - info_text.size().x, 0) => [ info_text ],
         );
 
-        if window
-            .input()
-            .pressed_mod(KeyCode::Char('c'), KeyModifiers::CONTROL)
+        if event!(window, Event::Key(e) => *e == KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL))
         {
             break;
         }

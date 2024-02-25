@@ -4,7 +4,7 @@ use ascii_forge::prelude::*;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut event = Event::FocusGained;
-    let mut window = Window::<KittyInput>::init()?;
+    let mut window = Window::init()?;
 
     loop {
         window.update(Duration::ZERO)?;
@@ -19,10 +19,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                 vec2(0, 0) => [ format!("{:#?}", event).replace('\t', "   ") ],
         );
 
-        if window
-            .input()
-            .pressed_mod(KeyCode::Char('c'), KeyModifiers::CONTROL)
-        {
+        if event!(window, Event::Key(e) =>
+            *e == KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL)
+        ) {
             break;
         }
     }

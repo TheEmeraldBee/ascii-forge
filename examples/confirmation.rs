@@ -2,15 +2,18 @@ use ascii_forge::prelude::*;
 use std::{io, time::Duration};
 
 pub fn confirmation() -> io::Result<bool> {
-    let mut window = Window::<Input>::init_inline(1)?;
+    let mut window = Window::init_inline(1)?;
 
     loop {
         render!(window, vec2(0, 0) => [ "Are You Sure? (`y` / `n`)" ]);
 
-        if window.input().code(KeyCode::Char('y')) || window.input().code(KeyCode::Char('Y')) {
+        if event!(window, Event::Key(e) => e.code == KeyCode::Char('Y') || e.code == KeyCode::Char('y'))
+        {
             return Ok(true);
         }
-        if window.input().code(KeyCode::Char('n')) || window.input().code(KeyCode::Char('N')) {
+
+        if event!(window, Event::Key(e) => e.code == KeyCode::Char('n') || e.code == KeyCode::Char('N'))
+        {
             return Ok(false);
         }
 

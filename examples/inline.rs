@@ -5,7 +5,7 @@ use std::{
 };
 
 fn progress_bar() -> io::Result<()> {
-    let mut window = Window::<Input>::init_inline(2)?;
+    let mut window = Window::init_inline(2)?;
 
     let timer = SystemTime::now();
     let duration = Duration::from_secs(3);
@@ -37,9 +37,7 @@ fn progress_bar() -> io::Result<()> {
         );
 
         // End the loop if key is pressed early
-        if window
-            .input()
-            .pressed(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL))
+        if event!(window, Event::Key(e) => *e == KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL))
         {
             break;
         }

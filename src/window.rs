@@ -14,39 +14,13 @@ use crossterm::{
 
 pub use crate::prelude::*;
 
-/// Struct that helps report what the terminal supports for you without you having to work with it yourself.
-pub struct Supports {
-    keyboard: bool,
-}
-
-impl Supports {
-    /// Returns an error if the terminal doesn't support the kitty keyboard protocol.
-    pub fn keyboard(&self) -> io::Result<()> {
-        match self.keyboard {
-            true => Ok(()),
-            false => Err(io::Error::new(
-                io::ErrorKind::Unsupported,
-                "Terminal Type Not Supported: Kitty keyboard protocol not implemented.",
-            )),
-        }
-    }
-}
-
-impl Default for Supports {
-    fn default() -> Self {
-        Self {
-            keyboard: terminal::supports_keyboard_enhancement().expect("Terminal should be fine"),
-        }
-    }
-}
-
 #[derive(Default)]
 pub struct Inline {
     active: bool,
     start: u16,
 }
 
-impl<I: InputTrait + Default> AsMut<Buffer> for Window<I> {
+impl AsMut<Buffer> for Window {
     fn as_mut(&mut self) -> &mut Buffer {
         self.buffer_mut()
     }
@@ -69,7 +43,7 @@ render!(
 )
 ```
 */
-pub struct Window<I: InputTrait + Default> {
+pub struct Window {
     io: io::Stdout,
     buffers: [Buffer; 2],
     active_buffer: usize,
@@ -80,28 +54,18 @@ pub struct Window<I: InputTrait + Default> {
 
     // Inlining
     inline: Option<Inline>,
-
-    // Input Support
-    supports: Supports,
-    input: I,
 }
 
-impl<I: InputTrait + Default> Default for Window<I> {
+impl Default for Window {
     fn default() -> Self {
         Self::init().expect("Init should have succeeded")
     }
 }
 
-impl<I: InputTrait + Default> Window<I> {
+impl Window {
     /// Creates a new window from the given stdout.
     /// Please prefer to use init as it will do all of the terminal init stuff.
     pub fn new(io: io::Stdout) -> io::Result<Self> {
-        let supports = Supports::default();
-
-        let mut input = I::default();
-
-        input.setup(&supports)?;
-
         Ok(Self {
             io,
             buffers: [Buffer::new(size()?), Buffer::new(size()?)],
@@ -111,20 +75,11 @@ impl<I: InputTrait + Default> Window<I> {
             mouse_pos: vec2(0, 0),
 
             inline: None,
-
-            supports,
-            input,
         })
     }
 
     /// Creates a new window built for inline using the given Stdout and height.
     pub fn new_inline(io: io::Stdout, height: u16) -> io::Result<Self> {
-        let supports = Supports::default();
-
-        let mut input = I::default();
-
-        input.setup(&supports)?;
-
         let size = vec2(size()?.0, height);
         Ok(Self {
             io,
@@ -135,9 +90,6 @@ impl<I: InputTrait + Default> Window<I> {
             mouse_pos: vec2(0, 0),
 
             inline: Some(Inline::default()),
-
-            supports,
-            input,
         })
     }
 
@@ -171,6 +123,17 @@ impl<I: InputTrait + Default> Window<I> {
         Window::new(stdout)
     }
 
+    pub fn keyboard(&mut self) -> io::Result<()> {
+        if terminal::supports_keyboard_enhancement().is_ok() {
+            Ok(())
+        } else {
+            Err(io::Error::new(
+                io::ErrorKind::Unsupported,
+                "Terminal doesn't support the kitty keyboard protocol",
+            ))
+        }
+    }
+
     /// Returns the active Buffer, as a reference.
     pub fn buffer(&self) -> &Buffer {
         &self.buffers[self.active_buffer]
@@ -195,7 +158,7 @@ impl<I: InputTrait + Default> Window<I> {
     /// Restores the window to it's previous state from before the window's init method.
     /// If the window is inline, restore the inline render
     pub fn restore(&mut self) -> io::Result<()> {
-        if self.supports().keyboard().is_ok() {
+        if terminal::supports_keyboard_enhancement().is_ok() {
             queue!(self.io, PopKeyboardEnhancementFlags)?;
         }
         if self.inline.is_some() {
@@ -241,7 +204,7 @@ impl<I: InputTrait + Default> Window<I> {
                     DisableLineWrap
                 )?;
 
-                if self.supports().keyboard().is_ok() {
+                if terminal::supports_keyboard_enhancement().is_ok() {
                     execute!(
                         self.io,
                         PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::all())
@@ -302,8 +265,6 @@ impl<I: InputTrait + Default> Window<I> {
     pub fn handle_event(&mut self, poll: Duration) -> io::Result<()> {
         self.events = vec![];
 
-        self.input.update();
-
         if event::poll(poll)? {
             // Get all queued events
             while event::poll(Duration::ZERO)? {
@@ -322,21 +283,11 @@ impl<I: InputTrait + Default> Window<I> {
                     _ => {}
                 }
 
-                self.input.register_event(event.clone());
-
                 self.events.push(event);
             }
         }
 
         Ok(())
-    }
-
-    pub fn input(&self) -> &I {
-        &self.input
-    }
-
-    pub fn input_mut(&mut self) -> &mut I {
-        &mut self.input
     }
 
     pub fn mouse_pos(&self) -> Vec2 {
@@ -361,17 +312,33 @@ impl<I: InputTrait + Default> Window<I> {
     pub fn io(&mut self) -> &mut Stdout {
         &mut self.io
     }
+}
 
-    pub fn supports(&self) -> &Supports {
-        &self.supports
-    }
+/// A macro that allows you to quickly check an event based off of a pattern
+/**
+Example
+```rust, no_run
+event!(window, Event::Key(e) => e.code == KeyCode::Char('q'));
+```
+*/
+#[macro_export]
+macro_rules! event {
+    ($window:expr, $event_type:pat => $($closure:tt)*) => {
+        $window.events().iter().any(|e| {
+            if let $event_type = e {
+                $($closure)*
+            } else {
+                false
+            }
+        })
+    };
 }
 
 /// Enables a panic hook to help you terminal still look pretty.
 pub fn handle_panics() {
     let original_hook = take_hook();
     set_hook(Box::new(move |e| {
-        Window::<Input>::new(io::stdout())
+        Window::new(io::stdout())
             .expect("Window should have created for panic")
             .restore()
             .expect("Window should have exited for panic");
@@ -379,7 +346,7 @@ pub fn handle_panics() {
     }))
 }
 
-impl<I: InputTrait + Default> Drop for Window<I> {
+impl Drop for Window {
     fn drop(&mut self) {
         self.restore().expect("Restoration should have succeded");
     }
