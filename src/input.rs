@@ -4,12 +4,26 @@ use crossterm::queue;
 
 use crate::prelude::*;
 
+/// The trait that should be implemented for any input protocol.
 pub trait InputTrait {
+    /// The function that should be used to setup the terminal.
     fn setup(&mut self, supports: &Supports) -> io::Result<()>;
+
+    /// The function that should be used to update the input for the terminal.
+    /// Used to clear the frame based input vectors.
     fn update(&mut self);
+
+    /// This function should be used to register the events from the terminal.
     fn register_event(&mut self, event: Event);
+
+    /// Registers the given key event to the input system.
+    fn register_key(&mut self, key_event: KeyEvent);
+
+    /// Registers the mouse event to the input system.
+    fn register_mouse(&mut self, mouse_event: MouseEvent);
 }
 
+/// The input type for your regular keyboard terminal.
 #[derive(Default, Debug)]
 pub struct Input {
     keys: Vec<KeyEvent>,
@@ -42,14 +56,12 @@ impl InputTrait for Input {
             _ => {}
         }
     }
-}
 
-impl Input {
-    pub fn register_key(&mut self, key_event: KeyEvent) {
+    fn register_key(&mut self, key_event: KeyEvent) {
         self.keys.push(key_event);
     }
 
-    pub fn register_mouse(&mut self, mouse_event: MouseEvent) {
+    fn register_mouse(&mut self, mouse_event: MouseEvent) {
         match mouse_event.kind {
             MouseEventKind::Down(button) => {
                 self.just_pressed_mouse.push(button);
@@ -68,16 +80,36 @@ impl Input {
             _ => {}
         }
     }
+}
 
+impl Input {
+    /// Returns true if the provided KeyCode was pressed this frame.
     pub fn code(&self, code: KeyCode) -> bool {
         self.keys.iter().any(|x| x.code == code)
     }
 
+    /// Returns true if the given KeyEvent was enacted this frame.
     pub fn pressed(&self, key_event: KeyEvent) -> bool {
         self.keys.contains(&key_event)
     }
+
+    /// Returns true if the given mouse button was just pressed.
+    pub fn mouse_just_pressed(&self, button: &MouseButton) -> bool {
+        self.just_pressed_mouse.contains(button)
+    }
+
+    /// Returns true if the given mouse button is currently down.
+    pub fn mouse_pressed(&self, button: &MouseButton) -> bool {
+        self.mouse.contains(button)
+    }
+
+    /// Returns true if the given mouse button was just released.
+    pub fn mouse_just_released(&self, button: &MouseButton) -> bool {
+        self.just_released_mouse.contains(button)
+    }
 }
 
+/// The input type for terminals with support for the kitty keyboard protocol
 #[derive(Default, Debug)]
 pub struct KittyInput {
     /// All of the key events
@@ -129,10 +161,8 @@ impl InputTrait for KittyInput {
             _ => {}
         }
     }
-}
 
-impl KittyInput {
-    pub fn register_key(&mut self, key_event: KeyEvent) {
+    fn register_key(&mut self, key_event: KeyEvent) {
         match key_event.kind {
             KeyEventKind::Press => {
                 self.just_pressed
@@ -150,7 +180,7 @@ impl KittyInput {
         }
     }
 
-    pub fn register_mouse(&mut self, mouse_event: MouseEvent) {
+    fn register_mouse(&mut self, mouse_event: MouseEvent) {
         match mouse_event.kind {
             MouseEventKind::Down(button) => {
                 self.just_pressed_mouse.push(button);
@@ -169,7 +199,9 @@ impl KittyInput {
             _ => {}
         }
     }
+}
 
+impl KittyInput {
     pub fn just_pressed_mod(&self, code: KeyCode, modifier: KeyModifiers) -> bool {
         self.just_pressed.contains(&(code, modifier))
     }
