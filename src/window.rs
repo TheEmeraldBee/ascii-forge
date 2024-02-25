@@ -17,6 +17,7 @@ pub use crate::prelude::*;
 #[derive(Default)]
 pub struct Inline {
     active: bool,
+    kitty: bool,
     start: u16,
 }
 
@@ -125,6 +126,9 @@ impl Window {
 
     pub fn keyboard(&mut self) -> io::Result<()> {
         if terminal::supports_keyboard_enhancement().is_ok() {
+            if let Some(inline) = &mut self.inline {
+                inline.kitty = true;
+            }
             Ok(())
         } else {
             Err(io::Error::new(
@@ -204,7 +208,7 @@ impl Window {
                     DisableLineWrap
                 )?;
 
-                if terminal::supports_keyboard_enhancement().is_ok() {
+                if self.inline.as_ref().expect("Inline should be some").kitty {
                     execute!(
                         self.io,
                         PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::all())
