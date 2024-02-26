@@ -134,6 +134,11 @@ impl Window {
             }
             if let Some(inline) = &mut self.inline {
                 inline.kitty = true;
+            } else {
+                execute!(
+                    self.io(),
+                    PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::all())
+                )?;
             }
             Ok(())
         } else {
