@@ -3,6 +3,7 @@ use std::{io, time::Duration};
 
 pub fn confirmation() -> io::Result<bool> {
     let mut window = Window::init_inline(1)?;
+    window.keyboard()?;
 
     loop {
         render!(window, vec2(0, 0) => [ "Are You Sure? (`y` / `n`)" ]);

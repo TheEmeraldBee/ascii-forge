@@ -165,7 +165,7 @@ impl Window {
         if terminal::supports_keyboard_enhancement().is_ok() {
             queue!(self.io, PopKeyboardEnhancementFlags)?;
         }
-        if self.inline.is_some() {
+        if let Some(inline) = &self.inline {
             execute!(
                 self.io,
                 DisableMouseCapture,
@@ -173,9 +173,12 @@ impl Window {
                 PopKeyboardEnhancementFlags,
             )?;
 
-            println!();
+            if terminal::size()?.1 != inline.start + 1 {
+                println!("");
+            }
 
             disable_raw_mode()?;
+
             Ok(())
         } else {
             execute!(
@@ -195,6 +198,8 @@ impl Window {
     /// Renders the window to the screen. should really only be used by the update method, but if you need a custom system, you can use this.
     pub fn render(&mut self) -> io::Result<()> {
         if self.inline.is_some() {
+            let term_height = terminal::size()?.1;
+
             if !self.inline.as_ref().expect("Inline should be some").active {
                 // Make room for the inline render
                 print!("{}", "\n".repeat(self.buffer().size().y as usize));
@@ -235,6 +240,15 @@ impl Window {
                     Print(cell),
                 )?;
             }
+
+            queue!(
+                self.io,
+                cursor::MoveTo(
+                    0,
+                    self.inline.as_ref().expect("Inline should be some").start
+                        - self.buffers[self.active_buffer].size().y
+                )
+            )?;
         } else {
             for (loc, cell) in
                 self.buffers[1 - self.active_buffer].diff(&self.buffers[self.active_buffer])
@@ -319,6 +333,11 @@ impl Window {
 }
 
 /// A macro that allows you to quickly check an event based off of a pattern
+/// Takes in the window, a pattern for the if let statement, and finally a closure.
+/// This closure could be anything that returns a bool.
+///
+/// Underneath, the event! macro runs an if let on your pattern checking for any of the
+/// Events to be true from your given closure.
 /**
 Example
 ```rust, no_run

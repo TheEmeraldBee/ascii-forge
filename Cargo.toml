@@ -21,3 +21,6 @@ name="space_invaders"
 
 [[example]]
 name="event_visualizer"
+
+[dev-dependencies]
+regex = "1.10.3"
