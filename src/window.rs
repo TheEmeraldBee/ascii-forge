@@ -125,7 +125,13 @@ impl Window {
     }
 
     pub fn keyboard(&mut self) -> io::Result<()> {
-        if terminal::supports_keyboard_enhancement().is_ok() {
+        if let Ok(t) = terminal::supports_keyboard_enhancement() {
+            if !t {
+                return Err(io::Error::new(
+                    io::ErrorKind::Unsupported,
+                    "Terminal doesn't support the kitty keyboard protocol",
+                ));
+            }
             if let Some(inline) = &mut self.inline {
                 inline.kitty = true;
             }

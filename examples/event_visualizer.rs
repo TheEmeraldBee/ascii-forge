@@ -5,6 +5,7 @@ use ascii_forge::prelude::*;
 fn main() -> Result<(), Box<dyn Error>> {
     let mut event = Event::FocusGained;
     let mut window = Window::init()?;
+    window.keyboard()?;
 
     loop {
         window.update(Duration::ZERO)?;
