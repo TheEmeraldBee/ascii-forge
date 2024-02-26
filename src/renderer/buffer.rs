@@ -55,6 +55,14 @@ impl Buffer {
         self.cells[idx] = cell.into();
     }
 
+    /// Sets all cells at the given location to the given cell
+    pub fn fill<C: Into<Cell>>(&mut self, cell: C) {
+        let cell = cell.into();
+        for i in 0..self.cells.len() {
+            self.cells[i] = cell.clone()
+        }
+    }
+
     /// Returns a reverence to the cell at the given location.
     pub fn get(&self, loc: impl Into<Vec2>) -> &Cell {
         let idx = self.index_of(loc);
