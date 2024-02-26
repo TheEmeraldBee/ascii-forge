@@ -18,7 +18,7 @@ where
         if validator(&text).is_some() {
             status_text = "-- Valid --".green();
         } else {
-            status_text = "-- Invalid --".red()
+            status_text = "-- Invalid --".red();
         }
 
         render!(window,
@@ -65,7 +65,7 @@ impl Display for Email {
     }
 }
 
-fn email(string: &str) -> Option<Email> {
+fn email(text: &str) -> Option<Email> {
     let mut email = Email {
         prefix: "".to_string(),
         suffix: "".to_string(),
@@ -73,7 +73,7 @@ fn email(string: &str) -> Option<Email> {
 
     let regex = match Regex::new(r"^(?<prefix>[\w\-\.]+)@(?<suffix>[\w-]+\.+[\w-]{2,4})$")
         .expect("Regex should be fine")
-        .captures(string)
+        .captures(text)
     {
         Some(s) => s,
         None => return None,
@@ -98,17 +98,19 @@ fn main() -> io::Result<()> {
     handle_panics();
 
     println!("Input your age!");
-    let num = input(|e| match e.parse::<i32>() {
+    let num = match input(|e| match e.parse::<i32>() {
         Ok(t) => Some(t),
         Err(_) => None,
-    })
-    .unwrap_or_default();
+    }) {
+        Ok(t) => t,
+        Err(_) => return Ok(()),
+    };
 
     println!("Input your email!");
-    let email = input(email).unwrap_or(Email {
-        prefix: "ERR".to_string(),
-        suffix: "ERR".to_string(),
-    });
+    let email = match input(email) {
+        Ok(t) => t,
+        Err(_) => return Ok(()),
+    };
 
     println!("{num}, {email}");
 

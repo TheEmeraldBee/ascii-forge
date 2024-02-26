@@ -13,14 +13,5 @@ license = "MIT OR Apache-2.0"
 compact_str = "0.7.1"
 crossterm = "0.27.0"
 
-[features]
-keyboard = []
-
-[[example]]
-name="space_invaders"
-
-[[example]]
-name="event_visualizer"
-
 [dev-dependencies]
 regex = "1.10.3"

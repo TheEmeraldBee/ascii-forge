@@ -171,6 +171,7 @@ impl Window {
                 DisableMouseCapture,
                 DisableFocusChange,
                 PopKeyboardEnhancementFlags,
+                Show,
             )?;
 
             if terminal::size()?.1 != inline.start + 1 {
@@ -211,7 +212,8 @@ impl Window {
                     self.io,
                     EnableMouseCapture,
                     EnableFocusChange,
-                    DisableLineWrap
+                    DisableLineWrap,
+                    Hide,
                 )?;
 
                 if self.inline.as_ref().expect("Inline should be some").kitty {
