@@ -29,7 +29,7 @@ use ascii_forge::prelude::*;
 
 fn main() -> io::Result<()> {
     // Will init the window for you, handling all required procedures.
-    let mut window = Window::<Input>::init()?;
+    let mut window = Window::init()?;
 
     // Ask the system to handle panics for us.
     handle_panics();
@@ -56,9 +56,6 @@ fn main() -> io::Result<()> {
             break;
         }
     }
-
-    // Crucial to call before exiting the program, as otherwise you will not leave the alternate screen.
-    window.restore()
 }
 ```
 
