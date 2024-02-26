@@ -1,10 +1,11 @@
-use std::{io, time::Duration};
+use std::{fmt::Display, io, time::Duration};
 
 use ascii_forge::prelude::*;
+use regex::Regex;
 
 pub fn input<T, V>(validator: T) -> io::Result<V>
 where
-    T: Fn(&String) -> Option<V>,
+    T: Fn(&str) -> Option<V>,
 {
     let mut window = Window::init_inline(2)?;
 
@@ -52,16 +53,64 @@ where
     }
 }
 
+#[derive(Debug)]
+pub struct Email {
+    pub prefix: String,
+    pub suffix: String,
+}
+
+impl Display for Email {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}@{}", self.prefix, self.suffix)
+    }
+}
+
+fn email(string: &str) -> Option<Email> {
+    let mut email = Email {
+        prefix: "".to_string(),
+        suffix: "".to_string(),
+    };
+
+    let regex = match Regex::new(r"^(?<prefix>[\w\-\.]+)@(?<suffix>[\w-]+\.+[\w-]{2,4})$")
+        .expect("Regex should be fine")
+        .captures(string)
+    {
+        Some(s) => s,
+        None => return None,
+    };
+
+    if let Some(item) = regex.name("prefix") {
+        email.prefix = item.as_str().to_string();
+    } else {
+        return None;
+    }
+
+    if let Some(item) = regex.name("suffix") {
+        email.suffix = item.as_str().to_string();
+    } else {
+        return None;
+    }
+
+    Some(email)
+}
+
 fn main() -> io::Result<()> {
     handle_panics();
 
+    println!("Input your age!");
     let num = input(|e| match e.parse::<i32>() {
         Ok(t) => Some(t),
         Err(_) => None,
     })
     .unwrap_or_default();
 
-    println!("Input: {}", num);
+    println!("Input your email!");
+    let email = input(email).unwrap_or(Email {
+        prefix: "ERR".to_string(),
+        suffix: "ERR".to_string(),
+    });
+
+    println!("{num}, {email}");
 
     Ok(())
 }

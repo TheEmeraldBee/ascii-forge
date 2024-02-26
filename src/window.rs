@@ -174,7 +174,10 @@ impl Window {
             )?;
 
             if terminal::size()?.1 != inline.start + 1 {
-                println!("");
+                print!(
+                    "{}",
+                    "\n".repeat(self.buffers[self.active_buffer].size().y as usize)
+                );
             }
 
             disable_raw_mode()?;
@@ -198,8 +201,6 @@ impl Window {
     /// Renders the window to the screen. should really only be used by the update method, but if you need a custom system, you can use this.
     pub fn render(&mut self) -> io::Result<()> {
         if self.inline.is_some() {
-            let term_height = terminal::size()?.1;
-
             if !self.inline.as_ref().expect("Inline should be some").active {
                 // Make room for the inline render
                 print!("{}", "\n".repeat(self.buffer().size().y as usize));
