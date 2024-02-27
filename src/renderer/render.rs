@@ -90,7 +90,7 @@ impl<D: Display, F: Into<StyledContent<D>> + Clone> CharString<D, F> {
 
 impl<D: Display, F: Into<StyledContent<D>> + Clone> Render for CharString<D, F> {
     fn render(&self, loc: Vec2, buffer: &mut Buffer) -> Vec2 {
-        render!(buffer, loc => [ Cell::style(self.text.clone().into()) ])
+        render!(buffer, loc => [ Cell::styled(self.text.clone().into()) ])
     }
 }
 

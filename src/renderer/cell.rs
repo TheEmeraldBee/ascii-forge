@@ -40,7 +40,7 @@ impl Cell {
         }
     }
 
-    pub fn style<D: Display>(content: StyledContent<D>) -> Self {
+    pub fn styled<D: Display>(content: StyledContent<D>) -> Self {
         Self {
             text: CompactString::new(format!("{}", content.content())),
             style: *content.style(),
@@ -49,6 +49,14 @@ impl Cell {
 
     pub fn is_empty(&self) -> bool {
         self.text.trim().is_empty()
+    }
+
+    pub fn text(&self) -> &str {
+        &self.text
+    }
+
+    pub fn style(&self) -> &ContentStyle {
+        &self.style
     }
 }
 
@@ -81,7 +89,7 @@ impl From<char> for Cell {
 
 impl<D: Display> From<StyledContent<D>> for Cell {
     fn from(value: StyledContent<D>) -> Self {
-        Self::style(value)
+        Self::styled(value)
     }
 }
 
