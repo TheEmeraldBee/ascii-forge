@@ -124,6 +124,7 @@ impl Window {
         Window::new(stdout)
     }
 
+    /// Enables the kitty keyboard protocol
     pub fn keyboard(&mut self) -> io::Result<()> {
         if let Ok(t) = terminal::supports_keyboard_enhancement() {
             if !t {
