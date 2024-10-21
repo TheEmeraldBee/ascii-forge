@@ -55,6 +55,9 @@ pub struct Window {
 
     // Inlining
     inline: Option<Inline>,
+
+    // Event Handling
+    just_resized: bool,
 }
 
 impl Default for Window {
@@ -76,6 +79,8 @@ impl Window {
             mouse_pos: vec2(0, 0),
 
             inline: None,
+
+            just_resized: false,
         })
     }
 
@@ -91,6 +96,8 @@ impl Window {
             mouse_pos: vec2(0, 0),
 
             inline: Some(Inline::default()),
+
+            just_resized: false,
         })
     }
 
@@ -265,6 +272,16 @@ impl Window {
                 )
             )?;
         } else {
+            if self.just_resized {
+                self.just_resized = false;
+                let cell = self.buffers[self.active_buffer].size();
+                for x in 0..cell.x {
+                    for y in 0..cell.y {
+                        let cell = self.buffers[self.active_buffer].get((x, y));
+                        queue!(self.io, cursor::MoveTo(x, y), Print(cell))?;
+                    }
+                }
+            }
             for (loc, cell) in
                 self.buffers[1 - self.active_buffer].diff(&self.buffers[self.active_buffer])
             {
@@ -308,6 +325,7 @@ impl Window {
                         if self.inline.is_none() {
                             self.buffers =
                                 [Buffer::new((width, height)), Buffer::new((width, height))];
+                            self.just_resized = true;
                         }
                     }
                     Event::Mouse(MouseEvent { column, row, .. }) => {
