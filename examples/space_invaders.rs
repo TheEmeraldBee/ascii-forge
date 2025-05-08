@@ -10,6 +10,9 @@ use std::{
     time::{Duration, SystemTime},
 };
 
+use crossterm::event::*;
+use crossterm::style::*;
+
 use ascii_forge::prelude::*;
 
 pub struct Projectile<E: Render> {

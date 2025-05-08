@@ -1,7 +1,8 @@
-use std::{fmt::Display, io, time::Duration};
-
 use ascii_forge::prelude::*;
+use crossterm::event::*;
+use crossterm::style::*;
 use regex::Regex;
+use std::{fmt::Display, io, time::Duration};
 
 pub fn input<T, V>(validator: T) -> io::Result<V>
 where

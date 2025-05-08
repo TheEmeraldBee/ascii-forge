@@ -1,4 +1,6 @@
 use ascii_forge::prelude::*;
+use crossterm::event::*;
+use crossterm::style::*;
 use std::{
     io,
     time::{Duration, SystemTime},
