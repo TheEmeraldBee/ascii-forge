@@ -6,13 +6,7 @@ use std::{
 
 use crossterm::{
     cursor::{self, Hide, Show},
-    event::{
-        self, DisableFocusChange, DisableMouseCapture, EnableFocusChange, EnableMouseCapture,
-        Event, KeyboardEnhancementFlags, MouseEvent, PopKeyboardEnhancementFlags,
-        PushKeyboardEnhancementFlags,
-    },
-    execute, queue,
-    style::Print,
+    event, execute, queue,
     terminal::{self, *},
     tty::IsTty,
 };

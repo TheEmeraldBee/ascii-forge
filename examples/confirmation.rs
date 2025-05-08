@@ -1,5 +1,4 @@
 use ascii_forge::prelude::*;
-use crossterm::event::*;
 use std::{io, time::Duration};
 
 pub fn confirmation() -> io::Result<bool> {

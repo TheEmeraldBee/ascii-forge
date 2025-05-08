@@ -1,9 +1,7 @@
 use std::fmt::Display;
 
+use crate::prelude::*;
 use compact_str::{CompactString, ToCompactString};
-use crossterm::style::{ContentStyle, StyledContent};
-
-use crate::{math::Vec2, prelude::Render};
 
 /// A cell that stores a symbol, and the style that will be applied to it.
 #[derive(Debug, Clone, Eq, PartialEq)]

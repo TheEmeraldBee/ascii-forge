@@ -1,5 +1,3 @@
-use crossterm::event::*;
-use crossterm::style::*;
 use std::{error::Error, time::Duration};
 
 use ascii_forge::prelude::*;

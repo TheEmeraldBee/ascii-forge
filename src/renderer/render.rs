@@ -1,7 +1,5 @@
 use std::{fmt::Display, marker::PhantomData};
 
-use crossterm::style::*;
-
 use crate::prelude::*;
 
 /// A macro to simplify rendering lots of items at once.
