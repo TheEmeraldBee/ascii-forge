@@ -1,6 +1,6 @@
 use std::{fmt::Display, marker::PhantomData};
 
-use crossterm::style::StyledContent;
+use crossterm::style::*;
 
 use crate::prelude::*;
 
