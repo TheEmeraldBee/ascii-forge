@@ -9,7 +9,7 @@ use crate::prelude::*;
 /// This render will return the location of which the last element finished rendering.
 /**
 `Example`
-```rust, no_run
+```rust
 use crate::prelude::*;
 
 // Create a window
@@ -18,8 +18,8 @@ let window = Window::init()?;
 // Render This works! and Another Element! To the window's buffer
 render!(
     window,
-        vec2(16, 16) => [ "This works!" ]
-        vec2(0, 0) => [ "Another Element!" ]
+        (16, 16) => [ "This works!" ]
+        (0, 0) => [ "Another Element!" ]
 );
 ```
 */
@@ -29,8 +29,9 @@ macro_rules! render {
         #[allow(unused_mut)]
         let mut loc;
         $(
-            loc = $loc;
-            $(loc = $render.render(loc, $buffer.as_mut());)*
+            loc = Vec2::from($loc);
+            $(loc = $render.render(loc, $buffer.as_mut()));*;
+            let _ = loc;
         )*
         loc
     }};
@@ -40,6 +41,12 @@ macro_rules! render {
 /// Render's return type is the location the render ended at.
 pub trait Render {
     fn render(&self, loc: Vec2, buffer: &mut Buffer) -> Vec2;
+    fn size(&self) -> Vec2 {
+        let mut buf = Buffer::new((u16::MAX, u16::MAX));
+        render!(buf, vec2(0, 0) => [ self ]);
+        buf.shrink();
+        buf.size()
+    }
 }
 
 /* --------------- Implementations --------------- */
@@ -48,11 +55,17 @@ impl Render for char {
         buffer.set(loc, *self);
         loc
     }
+    fn size(&self) -> Vec2 {
+        vec2(1, 1)
+    }
 }
 
 impl Render for &str {
     fn render(&self, loc: Vec2, buffer: &mut Buffer) -> Vec2 {
         render!(buffer, loc => [ StyledContent::new(ContentStyle::default(), self) ])
+    }
+    fn size(&self) -> Vec2 {
+        StyledContent::new(ContentStyle::default(), self).size()
     }
 }
 
@@ -113,5 +126,14 @@ impl<D: Display> Render for StyledContent<D> {
         }
         loc.y -= 1;
         loc
+    }
+    fn size(&self) -> Vec2 {
+        let mut width = 0;
+        let mut height = 0;
+        for line in format!("{}", self.content()).split('\n') {
+            width = line.chars().count().max(width);
+            height += 1;
+        }
+        vec2(width as u16, height)
     }
 }

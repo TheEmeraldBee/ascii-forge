@@ -8,6 +8,8 @@ repository = "https://github.com/TheEmeraldBee/ascii-forge"
 license = "MIT OR Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+doctest = false
 
 [dependencies]
 compact_str = "0.8.0"

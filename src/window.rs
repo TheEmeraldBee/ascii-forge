@@ -31,7 +31,7 @@ impl AsMut<Buffer> for Window {
 /// Represents the terminal window, allowing it to be used similar to a buffer,
 /// but has extra event handling.
 /**
-```rust, no_run
+```rust,
 use ascii_forge::prelude::*;
 
 let mut window = Window::init()?;
