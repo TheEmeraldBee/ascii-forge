@@ -53,8 +53,16 @@ impl Cell {
         &self.text
     }
 
+    pub fn text_mut(&mut self) -> &mut CompactString {
+        &mut self.text
+    }
+
     pub fn style(&self) -> &ContentStyle {
         &self.style
+    }
+
+    pub fn style_mut(&mut self) -> &mut ContentStyle {
+        &mut self.style
     }
 }
 
