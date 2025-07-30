@@ -276,7 +276,9 @@ impl Window {
                 let cell = self.buffers[self.active_buffer].size();
                 for x in 0..cell.x {
                     for y in 0..cell.y {
-                        let cell = self.buffers[self.active_buffer].get((x, y));
+                        let cell = self.buffers[self.active_buffer]
+                            .get((x, y))
+                            .expect("Cell should be in bounds");
                         queue!(self.io, cursor::MoveTo(x, y), Print(cell))?;
                     }
                 }

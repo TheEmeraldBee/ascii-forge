@@ -52,6 +52,11 @@ impl Buffer {
     pub fn set<C: Into<Cell>>(&mut self, loc: impl Into<Vec2>, cell: C) {
         let idx = self.index_of(loc);
 
+        // Ignore if cell is out of bounds
+        let Some(idx) = idx else {
+            return;
+        };
+
         self.cells[idx] = cell.into();
     }
 
@@ -64,24 +69,26 @@ impl Buffer {
     }
 
     /// Returns a reverence to the cell at the given location.
-    pub fn get(&self, loc: impl Into<Vec2>) -> &Cell {
-        let idx = self.index_of(loc);
-        &self.cells[idx]
+    pub fn get(&self, loc: impl Into<Vec2>) -> Option<&Cell> {
+        let idx = self.index_of(loc)?;
+        self.cells.get(idx)
     }
 
     /// Returns a mutable reference to the cell at the given location.
-    pub fn get_mut(&mut self, loc: impl Into<Vec2>) -> &mut Cell {
-        let idx = self.index_of(loc);
-        &mut self.cells[idx]
+    pub fn get_mut(&mut self, loc: impl Into<Vec2>) -> Option<&mut Cell> {
+        let idx = self.index_of(loc)?;
+        self.cells.get_mut(idx)
     }
 
-    fn index_of(&self, loc: impl Into<Vec2>) -> usize {
+    fn index_of(&self, loc: impl Into<Vec2>) -> Option<usize> {
         let loc = loc.into();
         let idx = loc.y as usize * self.size.x as usize + loc.x as usize;
 
-        debug_assert!((idx as u16) < self.size.x * self.size.y);
+        if (idx as u16) >= self.size.x * self.size.y {
+            return None;
+        }
 
-        idx.min((self.size.x as usize * self.size.y as usize) - 1)
+        Some(idx.min((self.size.x as usize * self.size.y as usize) - 1))
     }
 
     /// Clears the buffer
@@ -98,7 +105,10 @@ impl Buffer {
         for x in 0..self.size.x {
             for y in 0..self.size.y {
                 if self.get((x, y)) != other.get((x, y)) {
-                    res.push((vec2(x, y), other.get((x, y))))
+                    res.push((
+                        vec2(x, y),
+                        other.get((x, y)).expect("Cell should be in bounds"),
+                    ))
                 }
             }
         }
@@ -112,7 +122,11 @@ impl Buffer {
         let mut max_whitespace_y = 0;
         for x in (0..self.size.x).rev() {
             for y in (0..self.size.y).rev() {
-                if !self.get((x, y)).is_empty() {
+                if !self
+                    .get((x, y))
+                    .expect("Cell should be in bounds")
+                    .is_empty()
+                {
                     max_whitespace_x = x.max(max_whitespace_x);
                     max_whitespace_y = y.max(max_whitespace_y);
                 }
@@ -133,7 +147,7 @@ impl Buffer {
 
         for y in 0..new_size.y {
             for x in 0..new_size.x {
-                new_elements.push(self.get((x, y)).clone());
+                new_elements.push(self.get((x, y)).expect("Cell should be in bounds").clone());
             }
         }
 
@@ -165,7 +179,12 @@ impl Render for Buffer {
 
                 let dest = vec2(x + loc.x, y + loc.y);
 
-                buffer.set(dest, self.get(vec2(x, y)).clone());
+                buffer.set(
+                    dest,
+                    self.get(vec2(x, y))
+                        .expect("Cell should be in bounds")
+                        .clone(),
+                );
             }
         }
         vec2(loc.x + buffer.size().x, loc.y + buffer.size().y)
