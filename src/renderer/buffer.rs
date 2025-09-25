@@ -60,9 +60,8 @@ impl Buffer {
 
         let cell = cell.into();
 
-        // Overwrite the next cell if the character is wide
-        if cell.width() > 1 {
-            self.set(loc + vec2(1, 0), Cell::default());
+        for i in 1..cell.width().saturating_sub(1) {
+            self.set(loc + vec2(i, 0), Cell::default());
         }
 
         self.cells[idx] = cell;
@@ -111,8 +110,8 @@ impl Buffer {
         let mut res = vec![];
         let mut skip = 0;
 
-        for x in 0..self.size.x {
-            for y in 0..self.size.y {
+        for y in 0..self.size.y {
+            for x in 0..self.size.x {
                 if skip > 0 {
                     skip -= 1;
                     continue;
@@ -122,10 +121,9 @@ impl Buffer {
                 let new = other.get((x, y));
 
                 if old != new {
-                    if let Some(new) = new {
-                        skip = new.width().saturating_sub(1) as usize;
-                        res.push((vec2(x, y), new))
-                    }
+                    let new = new.expect("new should be in bounds");
+                    skip = new.width().saturating_sub(1) as usize;
+                    res.push((vec2(x, y), new))
                 }
             }
         }

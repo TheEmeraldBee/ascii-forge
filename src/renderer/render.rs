@@ -1,5 +1,7 @@
 use std::{fmt::Display, marker::PhantomData};
 
+use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
+
 use crate::prelude::*;
 
 /// A macro to simplify rendering lots of items at once.
@@ -49,12 +51,13 @@ pub trait Render {
 
 /* --------------- Implementations --------------- */
 impl Render for char {
-    fn render(&self, loc: Vec2, buffer: &mut Buffer) -> Vec2 {
+    fn render(&self, mut loc: Vec2, buffer: &mut Buffer) -> Vec2 {
         buffer.set(loc, *self);
+        loc.x += self.width().unwrap_or(1).saturating_sub(1) as u16;
         loc
     }
     fn size(&self) -> Vec2 {
-        vec2(1, 1)
+        vec2(self.width().unwrap_or(1) as u16, 1)
     }
 }
 
@@ -116,9 +119,9 @@ impl<D: Display> Render for StyledContent<D> {
         let base_x = loc.x;
         for line in format!("{}", self.content()).split('\n') {
             loc.x = base_x;
-            for char in line.chars().collect::<Vec<char>>() {
-                buffer.set(loc, StyledContent::new(*self.style(), char));
-                loc.x += 1;
+            for chr in line.chars().collect::<Vec<char>>() {
+                buffer.set(loc, StyledContent::new(*self.style(), chr));
+                loc.x += chr.width().unwrap_or(1) as u16;
             }
             loc.y += 1;
         }
@@ -130,7 +133,7 @@ impl<D: Display> Render for StyledContent<D> {
         let mut height = 0;
         for line in format!("{}", self.content()).split('\n') {
             width = line.chars().count().max(width);
-            height += 1;
+            height += line.width() as u16;
         }
         vec2(width as u16, height)
     }

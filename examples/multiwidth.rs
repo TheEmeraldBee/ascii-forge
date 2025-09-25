@@ -1,35 +1,52 @@
-
 use ascii_forge::prelude::*;
 use std::{io, time::Duration};
 
 fn main() -> io::Result<()> {
-    // Will init the window for you, handling all required procedures.
     let mut window = Window::init()?;
-
-    // Ask the system to handle panics for us.
     handle_panics();
 
-    loop {
-        // Ask the window to draw, handle events, and fix sizing issues.
-        // Duration is the time for which to poll events before re-rendering.
-        window.update(Duration::from_millis(200))?;
+    let buf = Buffer::sized_element("Normal: Hello World!\nWide: 👩‍👩‍👧‍👦 and 🚀\nMixed: a👩‍👩‍👧‍👦b🚀c");
 
-        // Render elements to the window
+    let buf_size = buf.size();
+
+    let mut pos = (0i16, 0i16);
+    let mut vel = (1i16, 1i16);
+
+    loop {
+        window.update(Duration::from_millis(60))?;
+        let win_size = window.size();
+        let max_x = win_size.x as i16;
+        let max_y = win_size.y as i16;
+
+        pos.0 += vel.0;
+        pos.1 += vel.1;
+
+        if pos.0 < 0 {
+            pos.0 = 0;
+            vel.0 = -vel.0;
+        } else if pos.0 + buf_size.x as i16 >= max_x {
+            pos.0 = max_x - buf_size.x as i16;
+            vel.0 = -vel.0;
+        }
+
+        if pos.1 < 0 {
+            pos.1 = 0;
+            vel.1 = -vel.1;
+        } else if pos.1 + buf_size.y as i16 >= max_y {
+            pos.1 = max_y - buf_size.y as i16;
+            vel.1 = -vel.1;
+        }
+
         render!(
             window,
-            vec2(0, 0) => [ "Normal: Hello World!" ],
-            vec2(0, 1) => [ "Wide: 👩‍👩‍👧‍👦 and 🚀" ],
-            vec2(0, 2) => [ "Mixed: a👩‍👩‍👧‍👦b🚀c" ],
-            vec2(0, 4) => [ "Press `Enter` to exit!".red() ],
+            vec2(pos.0 as u16, pos.1 as u16) => [ buf ],
+            vec2(0, max_y.saturating_sub(2) as u16) => [ "Press `Enter` to exit!".red() ],
         );
 
-        // Check if the Enter Key was pressed, and exit the app if it was.
         if event!(window, Event::Key(e) => e.code == KeyCode::Enter) {
             break;
         }
     }
 
-    // Restore the window, enabling the window to function normally again
-    // If nothing will be run after this, once the window is dropped, this will be run implicitly.
     window.restore()
 }
