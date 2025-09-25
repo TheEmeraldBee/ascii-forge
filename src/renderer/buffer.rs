@@ -50,6 +50,7 @@ impl Buffer {
 
     /// Sets a cell at the given location to the given cell
     pub fn set<C: Into<Cell>>(&mut self, loc: impl Into<Vec2>, cell: C) {
+        let loc = loc.into();
         let idx = self.index_of(loc);
 
         // Ignore if cell is out of bounds
@@ -57,7 +58,14 @@ impl Buffer {
             return;
         };
 
-        self.cells[idx] = cell.into();
+        let cell = cell.into();
+
+        // Overwrite the next cell if the character is wide
+        if cell.width() > 1 {
+            self.set(loc + vec2(1, 0), Cell::default());
+        }
+
+        self.cells[idx] = cell;
     }
 
     /// Sets all cells at the given location to the given cell
@@ -101,14 +109,23 @@ impl Buffer {
         assert!(self.size == other.size);
 
         let mut res = vec![];
+        let mut skip = 0;
 
         for x in 0..self.size.x {
             for y in 0..self.size.y {
-                if self.get((x, y)) != other.get((x, y)) {
-                    res.push((
-                        vec2(x, y),
-                        other.get((x, y)).expect("Cell should be in bounds"),
-                    ))
+                if skip > 0 {
+                    skip -= 1;
+                    continue;
+                }
+
+                let old = self.get((x, y));
+                let new = other.get((x, y));
+
+                if old != new {
+                    if let Some(new) = new {
+                        skip = new.width().saturating_sub(1) as usize;
+                        res.push((vec2(x, y), new))
+                    }
                 }
             }
         }

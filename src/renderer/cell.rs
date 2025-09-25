@@ -2,12 +2,14 @@ use std::fmt::Display;
 
 use crate::prelude::*;
 use compact_str::{CompactString, ToCompactString};
+use unicode_width::UnicodeWidthStr;
 
 /// A cell that stores a symbol, and the style that will be applied to it.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Cell {
     text: CompactString,
     style: ContentStyle,
+    width: u16,
 }
 
 impl Default for Cell {
@@ -18,31 +20,43 @@ impl Default for Cell {
 
 impl Cell {
     pub fn new<S: Into<ContentStyle>>(text: impl Into<CompactString>, style: S) -> Self {
+        let text = text.into();
         Self {
-            text: text.into(),
+            width: text.width() as u16,
+            text,
             style: style.into(),
         }
     }
 
     pub fn string(string: impl AsRef<str>) -> Self {
+        let text = CompactString::new(string);
         Self {
-            text: CompactString::new(string),
+            width: text.width() as u16,
+            text,
             style: ContentStyle::default(),
         }
     }
 
     pub fn chr(chr: char) -> Self {
+        let text = chr.to_compact_string();
         Self {
-            text: chr.to_compact_string(),
+            width: text.width() as u16,
+            text,
             style: ContentStyle::default(),
         }
     }
 
     pub fn styled<D: Display>(content: StyledContent<D>) -> Self {
+        let text = CompactString::new(format!("{}", content.content()));
         Self {
-            text: CompactString::new(format!("{}", content.content())),
+            width: text.width() as u16,
+            text,
             style: *content.style(),
         }
+    }
+
+    pub fn width(&self) -> u16 {
+        self.width
     }
 
     pub fn is_empty(&self) -> bool {

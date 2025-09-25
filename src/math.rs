@@ -1,8 +1,9 @@
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 
-/// A 2d Vector that has no math, is only used as a pretty version of a tuple of u16s
+/// A 2d Vector
 /// Can be made from (u16, u16).
 /// Using a single u16.into() will create a vec2 where both values are the same.
+/// Basic Mathematic Operations are supported
 #[derive(Default, Debug, Eq, PartialEq, PartialOrd, Ord, Copy, Clone)]
 pub struct Vec2 {
     pub x: u16,
