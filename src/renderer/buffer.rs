@@ -14,9 +14,8 @@ let mut buffer = Buffer::new(30, 30);
 
 // Render Hello World to the top left of the buffer
 render!(
-    buffer, {
-        (0, 0) => "Hello World!"
-    }
+    buffer, 
+    (0, 0) => [ "Hello World!" ]
 );
 ```
 

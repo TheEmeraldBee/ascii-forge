@@ -3,8 +3,7 @@ use crate::prelude::*;
 /// A basic border type.
 /// Rendering this will put the next content inside of the function
 pub struct Border {
-    width: u16,
-    height: u16,
+    size: Vec2,
     horizontal: &'static str,
     vertical: &'static str,
     top_left: &'static str,
@@ -16,8 +15,7 @@ pub struct Border {
 impl Border {
     pub const fn square(width: u16, height: u16) -> Border {
         Border {
-            width,
-            height,
+            size: Vec2(width, height),
             horizontal: "─",
             vertical: "│",
             top_right: "┐",
@@ -26,6 +24,11 @@ impl Border {
             bottom_right: "┘",
         }
     }
+
+    pub fn set_size(&mut self, size: impl Into<Vec2>) {
+        self.size = size.into();
+    }
+
 }
 impl Render for Border {
     fn render(&self, loc: Vec2, buffer: &mut Buffer) -> Vec2 {

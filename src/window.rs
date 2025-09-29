@@ -37,9 +37,7 @@ let mut window = Window::init()?;
 
 render!(
     window,
-    [
-        (10, 10) => "Element Here!"
-    ]
+    (10, 10) => [ "Element Here!" ]
 )
 ```
 */
