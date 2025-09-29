@@ -15,7 +15,7 @@ pub struct Border {
 impl Border {
     pub const fn square(width: u16, height: u16) -> Border {
         Border {
-            size: Vec2(width, height),
+            size: vec2(width, height),
             horizontal: "─",
             vertical: "│",
             top_right: "┐",
