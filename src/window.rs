@@ -30,17 +30,16 @@ impl AsMut<Buffer> for Window {
 /// Represents the terminal window, allowing it to be used similar to a buffer,
 /// but has extra event handling.
 /**
-```rust,
-use ascii_forge::prelude::*;
+```rust, no_run
+# use ascii_forge::prelude::*;
 
+# fn main() -> std::io::Result<()> {
 let mut window = Window::init()?;
 
-render!(
-    window,
-    [
-        (10, 10) => "Element Here!"
-    ]
-)
+render!(window, (10, 10) => [ "Element Here!" ]);
+
+# Ok(())
+# }
 ```
 */
 pub struct Window {
@@ -375,7 +374,12 @@ impl Window {
 /**
 Example
 ```rust, no_run
+# use ascii_forge::prelude::*;
+# fn main() -> std::io::Result<()> {
+# let mut window = Window::init()?;
 event!(window, Event::Key(e) => e.code == KeyCode::Char('q'));
+# Ok(())
+# }
 ```
 */
 #[macro_export]

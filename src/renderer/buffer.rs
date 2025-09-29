@@ -6,18 +6,15 @@ A screen buffer that can be rendered to, has a size
 This is the backbone of ascii-forge
 
 `Example`
-```rust, no_run
-use ascii_forge::prelude::*;
-
+```rust
+# use ascii_forge::prelude::*;
+# fn main() {
 // A 30x30 buffer window
-let mut buffer = Buffer::new(30, 30);
+let mut buffer = Buffer::new((30, 30));
 
 // Render Hello World to the top left of the buffer
-render!(
-    buffer, {
-        (0, 0) => "Hello World!"
-    }
-);
+render!(buffer, (0, 0) => [ "Hello World!" ]);
+# }
 ```
 
 */

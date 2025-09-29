@@ -10,17 +10,20 @@ use crate::prelude::*;
 /**
 `Example`
 ```rust
-use crate::prelude::*;
-
-// Create a window
-let window = Window::init()?;
+# use ascii_forge::prelude::*;
+# fn main() -> std::io::Result<()> {
+// Create a buffer
+let mut buffer = Buffer::new((32, 32));
 
 // Render This works! and Another Element! To the window's buffer
 render!(
-    window,
-        (16, 16) => [ "This works!" ]
+    buffer,
+        (16, 16) => [ "This works!" ],
         (0, 0) => [ "Another Element!" ]
 );
+
+# Ok(())
+# }
 ```
 */
 #[macro_export]

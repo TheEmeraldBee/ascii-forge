@@ -59,6 +59,6 @@ impl<V: Into<Vec2>> SubAssign<V> for Vec2 {
 }
 
 /// Creates a Vec2 from the given inputs.
-pub fn vec2(x: u16, y: u16) -> Vec2 {
+pub const fn vec2(x: u16, y: u16) -> Vec2 {
     Vec2 { x, y }
 }
