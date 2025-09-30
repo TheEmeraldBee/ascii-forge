@@ -86,6 +86,10 @@ impl Buffer {
 
     fn index_of(&self, loc: impl Into<Vec2>) -> Option<usize> {
         let loc = loc.into();
+        if loc.x > self.size.x || loc.y > self.size.y {
+            return None;
+        }
+
         let idx = loc.y as usize * self.size.x as usize + loc.x as usize;
 
         if (idx as u16) >= self.size.x * self.size.y {
