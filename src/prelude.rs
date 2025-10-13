@@ -9,3 +9,5 @@ pub use crossterm;
 
 pub use crossterm::event::*;
 pub use crossterm::style::*;
+
+pub use crossterm::cursor::SetCursorStyle;

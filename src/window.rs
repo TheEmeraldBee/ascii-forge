@@ -1,17 +1,16 @@
+pub use crate::prelude::*;
+
+use crossterm::{
+    cursor::{self, Hide, MoveTo, Show},
+    event, execute, queue,
+    terminal::{self, *},
+    tty::IsTty,
+};
 use std::{
     io::{self, Stdout, Write},
     panic::{set_hook, take_hook},
     time::Duration,
 };
-
-use crossterm::{
-    cursor::{self, Hide, Show},
-    event, execute, queue,
-    terminal::{self, *},
-    tty::IsTty,
-};
-
-pub use crate::prelude::*;
 
 #[derive(Default)]
 pub struct Inline {
@@ -32,12 +31,9 @@ impl AsMut<Buffer> for Window {
 /**
 ```rust, no_run
 # use ascii_forge::prelude::*;
-
 # fn main() -> std::io::Result<()> {
 let mut window = Window::init()?;
-
 render!(window, (10, 10) => [ "Element Here!" ]);
-
 # Ok(())
 # }
 ```
@@ -48,12 +44,16 @@ pub struct Window {
     active_buffer: usize,
     events: Vec<Event>,
 
+    last_cursor: (bool, Vec2, SetCursorStyle),
+
+    cursor_visible: bool,
+    cursor: Vec2,
+    cursor_style: SetCursorStyle,
+
     // Input Helpers,
     mouse_pos: Vec2,
-
     // Inlining
     inline: Option<Inline>,
-
     // Event Handling
     just_resized: bool,
 }
@@ -73,11 +73,12 @@ impl Window {
             buffers: [Buffer::new(size()?), Buffer::new(size()?)],
             active_buffer: 0,
             events: vec![],
-
+            last_cursor: (false, vec2(0, 0), SetCursorStyle::SteadyBlock),
+            cursor_visible: false,
+            cursor_style: SetCursorStyle::SteadyBlock,
+            cursor: vec2(0, 0),
             mouse_pos: vec2(0, 0),
-
             inline: None,
-
             just_resized: false,
         })
     }
@@ -90,11 +91,12 @@ impl Window {
             buffers: [Buffer::new(size), Buffer::new(size)],
             active_buffer: 0,
             events: vec![],
-
+            last_cursor: (false, vec2(0, 0), SetCursorStyle::SteadyBlock),
+            cursor_visible: false,
+            cursor_style: SetCursorStyle::SteadyBlock,
+            cursor: vec2(0, 0),
             mouse_pos: vec2(0, 0),
-
             inline: Some(Inline::default()),
-
             just_resized: false,
         })
     }
@@ -103,20 +105,15 @@ impl Window {
     /// Height is the number of columns that your terminal will need.
     pub fn init_inline(height: u16) -> io::Result<Self> {
         let stdout = io::stdout();
-
         assert!(stdout.is_tty());
-
         Window::new_inline(stdout, height)
     }
 
     /// Initializes the window, and returns a new Window for your use.
     pub fn init() -> io::Result<Self> {
         enable_raw_mode()?;
-
         let mut stdout = io::stdout();
-
         assert!(stdout.is_tty());
-
         execute!(
             stdout,
             EnterAlternateScreen,
@@ -125,7 +122,6 @@ impl Window {
             Hide,
             DisableLineWrap,
         )?;
-
         Window::new(stdout)
     }
 
@@ -190,16 +186,13 @@ impl Window {
                 PopKeyboardEnhancementFlags,
                 Show,
             )?;
-
             if terminal::size()?.1 != inline.start + 1 {
                 print!(
                     "{}",
                     "\n".repeat(self.buffers[self.active_buffer].size().y as usize)
                 );
             }
-
             disable_raw_mode()?;
-
             Ok(())
         } else {
             execute!(
@@ -211,7 +204,6 @@ impl Window {
                 Show,
                 EnableLineWrap,
             )?;
-
             disable_raw_mode()
         }
     }
@@ -232,16 +224,13 @@ impl Window {
                     DisableLineWrap,
                     Hide,
                 )?;
-
                 if self.inline.as_ref().expect("Inline should be some").kitty {
                     execute!(
                         self.io,
                         PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::all())
                     )?;
                 }
-
                 let inline = self.inline.as_mut().expect("Inline should be some");
-
                 inline.active = true;
                 inline.start = cursor::position()?.1;
             }
@@ -282,6 +271,7 @@ impl Window {
                     }
                 }
             }
+
             for (loc, cell) in
                 self.buffers[1 - self.active_buffer].diff(&self.buffers[self.active_buffer])
             {
@@ -293,33 +283,55 @@ impl Window {
 
     /// Handles events, and renders the screen.
     pub fn update(&mut self, poll: Duration) -> io::Result<()> {
-        let cursor_pos = cursor::position()?;
-
         // Render Window
         self.render()?;
-
         self.swap_buffers();
-
-        queue!(self.io, cursor::MoveTo(cursor_pos.0, cursor_pos.1))?;
-
+        self.render_cursor()?;
         // Flush Render To Stdout
         self.io.flush()?;
-
         // Poll For Events
         self.handle_event(poll)?;
+        Ok(())
+    }
 
+    pub fn render_cursor(&mut self) -> io::Result<()> {
+        // Get the current cursor position
+        let cursor_pos = cursor::position()?;
+        if self.cursor_style != self.last_cursor.2
+            || self.cursor != cursor_pos.into()
+            || self.cursor != self.last_cursor.1
+            || self.cursor_visible != self.last_cursor.0
+        {
+            if self.cursor_visible {
+                let cursor = self.cursor;
+                let style = self.cursor_style;
+
+                // Calculate the actual position based on inline rendering
+                let actual_pos = if let Some(inline) = &self.inline {
+                    vec2(
+                        cursor.x,
+                        inline.start - self.buffers[self.active_buffer].size().y + cursor.y,
+                    )
+                } else {
+                    cursor
+                };
+
+                queue!(self.io(), MoveTo(actual_pos.x, actual_pos.y), style, Show)?;
+            } else {
+                queue!(self.io(), Hide)?;
+            }
+        }
+        self.last_cursor = (self.cursor_visible, self.cursor, self.cursor_style);
         Ok(())
     }
 
     /// Handles events. Used automatically by the update method, so no need to use it unless update is being used.
     pub fn handle_event(&mut self, poll: Duration) -> io::Result<()> {
         self.events = vec![];
-
         if event::poll(poll)? {
             // Get all queued events
             while event::poll(Duration::ZERO)? {
                 let event = event::read()?;
-
                 match event {
                     Event::Resize(width, height) => {
                         if self.inline.is_none() {
@@ -333,12 +345,57 @@ impl Window {
                     }
                     _ => {}
                 }
-
                 self.events.push(event);
             }
         }
-
         Ok(())
+    }
+
+    /// Returns whether the cursor is visible
+    pub fn cursor_visible(&self) -> bool {
+        self.cursor_visible
+    }
+
+    /// Returns the current cursor position
+    pub fn cursor(&self) -> Vec2 {
+        self.cursor
+    }
+
+    /// Returns the current cursor style
+    pub fn cursor_style(&self) -> SetCursorStyle {
+        self.cursor_style
+    }
+
+    /// Sets the cursor visibility
+    pub fn set_cursor_visible(&mut self, visible: bool) {
+        self.cursor_visible = visible;
+    }
+
+    /// Sets the cursor position, clamping to window bounds
+    pub fn set_cursor(&mut self, pos: Vec2) {
+        let size = self.size();
+        self.cursor.x = pos.x.min(size.x.saturating_sub(1));
+        self.cursor.y = pos.y.min(size.y.saturating_sub(1));
+    }
+
+    /// Sets the cursor style
+    pub fn set_cursor_style(&mut self, style: SetCursorStyle) {
+        self.cursor_style = style;
+    }
+
+    /// Move the cursor by a given distance
+    pub fn move_cursor(&mut self, x: i16, y: i16) {
+        let size = self.size();
+        self.cursor.x = self
+            .cursor
+            .x
+            .saturating_add_signed(x)
+            .min(size.x.saturating_sub(1));
+        self.cursor.y = self
+            .cursor
+            .y
+            .saturating_add_signed(y)
+            .min(size.y.saturating_sub(1));
     }
 
     pub fn mouse_pos(&self) -> Vec2 {
@@ -354,9 +411,7 @@ impl Window {
     pub fn hover<V: Into<Vec2>>(&self, loc: V, size: V) -> io::Result<bool> {
         let loc = loc.into();
         let size = size.into();
-
         let pos: Vec2 = self.mouse_pos();
-
         Ok(pos.x <= loc.x + size.x && pos.x >= loc.x && pos.y <= loc.y + size.y && pos.y >= loc.y)
     }
 
