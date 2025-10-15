@@ -14,7 +14,7 @@ pub struct Cell {
 
 impl Default for Cell {
     fn default() -> Self {
-        Self::chr(' ')
+        Self::chr('\0')
     }
 }
 

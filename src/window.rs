@@ -70,7 +70,10 @@ impl Window {
     pub fn new(io: io::Stdout) -> io::Result<Self> {
         Ok(Self {
             io,
-            buffers: [Buffer::new(size()?), Buffer::new(size()?)],
+            buffers: [
+                Buffer::new_filled(size()?, ' '),
+                Buffer::new_filled(size()?, ' '),
+            ],
             active_buffer: 0,
             events: vec![],
             last_cursor: (false, vec2(0, 0), SetCursorStyle::SteadyBlock),
@@ -88,7 +91,7 @@ impl Window {
         let size = vec2(size()?.0, height);
         Ok(Self {
             io,
-            buffers: [Buffer::new(size), Buffer::new(size)],
+            buffers: [Buffer::new_filled(size, ' '), Buffer::new_filled(size, ' ')],
             active_buffer: 0,
             events: vec![],
             last_cursor: (false, vec2(0, 0), SetCursorStyle::SteadyBlock),
@@ -164,7 +167,7 @@ impl Window {
     /// Swaps the buffers, clearing the old buffer. Used automatically by the window's update method.
     pub fn swap_buffers(&mut self) {
         self.active_buffer = 1 - self.active_buffer;
-        self.buffers[self.active_buffer].clear();
+        self.buffers[self.active_buffer].fill(' ');
     }
 
     /// Returns the current known size of the buffer's window.
@@ -335,8 +338,10 @@ impl Window {
                 match event {
                     Event::Resize(width, height) => {
                         if self.inline.is_none() {
-                            self.buffers =
-                                [Buffer::new((width, height)), Buffer::new((width, height))];
+                            self.buffers = [
+                                Buffer::new_filled((width, height), ' '),
+                                Buffer::new_filled((width, height), ' '),
+                            ];
                             self.just_resized = true;
                         }
                     }

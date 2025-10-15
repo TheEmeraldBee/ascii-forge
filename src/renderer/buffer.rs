@@ -40,6 +40,17 @@ impl Buffer {
         }
     }
 
+    /// Creates a new buffer filled with the given cell type.
+    pub fn new_filled(size: impl Into<Vec2>, cell: impl Into<Cell>) -> Self {
+        let cell = cell.into();
+        let size = size.into();
+
+        Self {
+            size,
+            cells: vec![cell; size.x as usize * size.y as usize],
+        }
+    }
+
     /// Returns the current size of the buffer.
     pub fn size(&self) -> Vec2 {
         self.size
@@ -62,6 +73,11 @@ impl Buffer {
         }
 
         self.cells[idx] = cell;
+    }
+
+    /// Sets a cell at the given location to an empty cell ('\0')
+    pub fn del(&mut self, loc: impl Into<Vec2>) {
+        self.set(loc, '\0');
     }
 
     /// Sets all cells at the given location to the given cell
@@ -99,7 +115,7 @@ impl Buffer {
         Some(idx.min((self.size.x as usize * self.size.y as usize) - 1))
     }
 
-    /// Clears the buffer
+    /// Clears the buffer, filling it with '\0' (empty) characters
     pub fn clear(&mut self) {
         *self = Self::new(self.size);
     }
@@ -132,17 +148,13 @@ impl Buffer {
         res
     }
 
-    /// Shrinks the buffer to the given size by dropping any cells that are only whitespace
+    /// Shrinks the buffer to the given size by dropping any cells that are empty ('\0')
     pub fn shrink(&mut self) {
         let mut max_whitespace_x = 0;
         let mut max_whitespace_y = 0;
         for x in (0..self.size.x).rev() {
             for y in (0..self.size.y).rev() {
-                if !self
-                    .get((x, y))
-                    .expect("Cell should be in bounds")
-                    .is_empty()
-                {
+                if self.get((x, y)).expect("Cell should be in bounds").text() != "\0" {
                     max_whitespace_x = x.max(max_whitespace_x);
                     max_whitespace_y = y.max(max_whitespace_y);
                 }
@@ -183,26 +195,26 @@ impl Buffer {
 
 impl Render for Buffer {
     fn render(&self, loc: Vec2, buffer: &mut Buffer) -> Vec2 {
-        for x in 0..self.size.x {
-            if x + loc.x >= buffer.size.x {
+        for x in 0..self.size().x {
+            if x + loc.x >= buffer.size().x {
                 break;
             }
-
-            for y in 0..self.size.y {
-                if y + loc.y >= buffer.size.y {
+            for y in 0..self.size().y {
+                if y + loc.y >= buffer.size().y {
                     break;
                 }
 
-                let dest = vec2(x + loc.x, y + loc.y);
+                let source_pos = vec2(x, y);
+                let dest_pos = vec2(x + loc.x, y + loc.y);
 
-                buffer.set(
-                    dest,
-                    self.get(vec2(x, y))
-                        .expect("Cell should be in bounds")
-                        .clone(),
-                );
+                if let Some(cell) = self.get(source_pos) {
+                    if cell.text() != "\0" {
+                        buffer.set(dest_pos, cell.clone());
+                    }
+                }
             }
         }
+
         vec2(loc.x + buffer.size().x, loc.y + buffer.size().y)
     }
 }

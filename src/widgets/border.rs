@@ -32,6 +32,14 @@ impl Render for Border {
         if self.size.x < 3 || self.size.y < 3 {
             return loc;
         }
+
+        // Fill the interior with spaces
+        for y in (loc.y + 1)..(loc.y + self.size.y.saturating_sub(1)) {
+            for x in (loc.x + 1)..(loc.x + self.size.x.saturating_sub(1)) {
+                buffer.set(vec2(x, y), " ");
+            }
+        }
+
         for y in (loc.y + 1)..(loc.y + self.size.y.saturating_sub(1)) {
             buffer.set(vec2(loc.x, y), self.vertical);
             buffer.set(
