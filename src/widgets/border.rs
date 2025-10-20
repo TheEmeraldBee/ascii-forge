@@ -11,6 +11,10 @@ pub struct Border {
     pub top_right: &'static str,
     pub bottom_left: &'static str,
     pub bottom_right: &'static str,
+
+    pub title: Option<Buffer>,
+
+    pub style: ContentStyle,
 }
 
 impl Border {
@@ -23,7 +27,91 @@ impl Border {
             top_left: "┌",
             bottom_left: "└",
             bottom_right: "┘",
+
+            title: None,
+
+            style: ContentStyle {
+                foreground_color: None,
+                background_color: None,
+                underline_color: None,
+                attributes: Attributes::none(),
+            },
         }
+    }
+
+    pub const fn rounded(width: u16, height: u16) -> Border {
+        Border {
+            size: vec2(width, height),
+            horizontal: "─",
+            vertical: "│",
+            top_right: "╮",
+            top_left: "╭",
+            bottom_left: "╰",
+            bottom_right: "╯",
+
+            title: None,
+
+            style: ContentStyle {
+                foreground_color: None,
+                background_color: None,
+                underline_color: None,
+                attributes: Attributes::none(),
+            },
+        }
+    }
+
+    pub const fn thick(width: u16, height: u16) -> Border {
+        Border {
+            size: vec2(width, height),
+            horizontal: "━",
+            vertical: "┃",
+            top_right: "┓",
+            top_left: "┏",
+            bottom_left: "┗",
+            bottom_right: "┛",
+
+            title: None,
+
+            style: ContentStyle {
+                foreground_color: None,
+                background_color: None,
+                underline_color: None,
+                attributes: Attributes::none(),
+            },
+        }
+    }
+
+    pub const fn double(width: u16, height: u16) -> Border {
+        Border {
+            size: vec2(width, height),
+            horizontal: "═",
+            vertical: "║",
+            top_right: "╗",
+            top_left: "╔",
+            bottom_left: "╚",
+            bottom_right: "╝",
+
+            title: None,
+
+            style: ContentStyle {
+                foreground_color: None,
+                background_color: None,
+                underline_color: None,
+                attributes: Attributes::none(),
+            },
+        }
+    }
+
+    pub fn with_title(mut self, title: impl Render) -> Border {
+        let title_buf = Buffer::sized_element(title);
+        self.title = Some(title_buf);
+
+        self
+    }
+
+    pub fn with_style(mut self, style: ContentStyle) -> Border {
+        self.style = style;
+        self
     }
 }
 
@@ -40,21 +128,44 @@ impl Render for Border {
             }
         }
 
+        // Render vertical sides with style
         for y in (loc.y + 1)..(loc.y + self.size.y.saturating_sub(1)) {
-            buffer.set(vec2(loc.x, y), self.vertical);
+            buffer.set(
+                vec2(loc.x, y),
+                StyledContent::new(self.style, self.vertical),
+            );
             buffer.set(
                 vec2(loc.x + self.size.x.saturating_sub(1), y),
-                self.vertical,
+                StyledContent::new(self.style, self.vertical),
             );
         }
 
-        let _ = render!(buffer,
-            loc => [self.top_left, self.horizontal.repeat(self.size.x.saturating_sub(2) as usize), self.top_right],
-            vec2(loc.x, loc.y + self.size.y.saturating_sub(1)) => [self.bottom_left, self.horizontal.repeat(self.size.x.saturating_sub(2) as usize), self.bottom_right]
+        // Render top and bottom borders with style
+        let horizontal_repeat = self
+            .horizontal
+            .repeat(self.size.x.saturating_sub(2) as usize);
+        render!(buffer,
+            loc => [
+                StyledContent::new(self.style, self.top_left),
+                StyledContent::new(self.style, horizontal_repeat.as_str()),
+                StyledContent::new(self.style, self.top_right)
+            ],
+            vec2(loc.x, loc.y + self.size.y.saturating_sub(1)) => [
+                StyledContent::new(self.style, self.bottom_left),
+                StyledContent::new(self.style, self.horizontal.repeat(self.size.x.saturating_sub(2) as usize).as_str()),
+                StyledContent::new(self.style, self.bottom_right)
+            ]
         );
+
+        // Render title with clipping to fit within the border width
+        if let Some(title) = &self.title {
+            let max_title_width = self.size.x.saturating_sub(2); // Account for corners
+            title.render_clipped(loc + vec2(1, 0), vec2(max_title_width, 1), buffer);
+        }
 
         vec2(loc.x + 1, loc.y + 1)
     }
+
     fn size(&self) -> Vec2 {
         self.size
     }

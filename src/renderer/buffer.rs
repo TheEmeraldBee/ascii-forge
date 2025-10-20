@@ -191,6 +191,42 @@ impl Buffer {
         buff.shrink();
         buff
     }
+
+    /// Renders a clipped region of this buffer to another buffer.
+    pub fn render_clipped(
+        &self,
+        loc: impl Into<Vec2>,
+        clip_size: impl Into<Vec2>,
+        buffer: &mut Buffer,
+    ) -> Vec2 {
+        let loc = loc.into();
+        let clip_size = clip_size.into();
+
+        for x in 0..clip_size.x.min(self.size().x) {
+            if x + loc.x >= buffer.size().x {
+                break;
+            }
+            for y in 0..clip_size.y.min(self.size().y) {
+                if y + loc.y >= buffer.size().y {
+                    break;
+                }
+
+                let source_pos = vec2(x, y);
+                let dest_pos = vec2(x + loc.x, y + loc.y);
+
+                if let Some(cell) = self.get(source_pos) {
+                    if cell.text() != "\0" {
+                        buffer.set(dest_pos, cell.clone());
+                    }
+                }
+            }
+        }
+
+        vec2(
+            loc.x + clip_size.x.min(self.size().x),
+            loc.y + clip_size.y.min(self.size().y),
+        )
+    }
 }
 
 impl Render for Buffer {
@@ -216,5 +252,13 @@ impl Render for Buffer {
         }
 
         vec2(loc.x + buffer.size().x, loc.y + buffer.size().y)
+    }
+
+    fn size(&self) -> Vec2 {
+        self.size
+    }
+
+    fn render_clipped(&self, loc: Vec2, clip_size: Vec2, buffer: &mut Buffer) -> Vec2 {
+        self.render_clipped(loc, clip_size, buffer)
     }
 }

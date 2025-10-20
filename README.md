@@ -16,7 +16,8 @@ To list off some big differences:
 - Absolutely everything used to make the engine available is available to you.
     - This means that if the update method doesn't work as expected, you can make your own using the other methods.
     - Want to access the stdout that the window is using, use the `io()` method!
-- Most of the larger engines make their own layout system, this doesn't. You use columns and rows, no extra abstraction on top of this.
+- Most of the larger engines make their own layout system, in this engine, the layout engine is totally optional.
+    - The layout engine is very basic, and relies on the user to handle the rendering of things.
 
 # Examples
 Most of the examples will be found in the [examples](https://github.com/TheEmeraldBee/ascii-forge/tree/master/examples) directory
@@ -61,4 +62,4 @@ fn main() -> io::Result<()> {
 
 # Documentation
 - [docs.rs](https://docs.rs/ascii-forge/latest/ascii_forge/)
-- Wiki Coming Soon!
+- See the examples for basic usage
