@@ -1,3 +1,5 @@
+use std::ops::{Deref, DerefMut};
+
 use crate::prelude::*;
 
 /// A basic border type.
@@ -15,6 +17,19 @@ pub struct Border {
     pub title: Option<Buffer>,
 
     pub style: ContentStyle,
+}
+
+impl Deref for Border {
+    type Target = ContentStyle;
+    fn deref(&self) -> &Self::Target {
+        &self.style
+    }
+}
+
+impl DerefMut for Border {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.style
+    }
 }
 
 impl Border {
@@ -106,11 +121,6 @@ impl Border {
         let title_buf = Buffer::sized_element(title);
         self.title = Some(title_buf);
 
-        self
-    }
-
-    pub fn with_style(mut self, style: ContentStyle) -> Border {
-        self.style = style;
         self
     }
 }

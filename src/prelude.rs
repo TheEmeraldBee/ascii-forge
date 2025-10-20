@@ -5,6 +5,8 @@ pub use crate::render;
 pub use crate::renderer::{buffer::*, cell::*, render::*};
 pub use crate::window::*;
 
+pub use crate::layout::*;
+
 pub use crossterm;
 
 pub use crossterm::event::*;
