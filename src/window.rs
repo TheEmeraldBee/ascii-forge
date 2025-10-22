@@ -411,6 +411,20 @@ impl Window {
     /// Could be usefull with a custom event loop
     /// or for keyboard control from elsewhere
     pub fn insert_event(&mut self, event: Event) {
+        match event {
+            Event::Resize(width, height) => {
+                if self.inline.is_none() {
+                    self.buffers = [
+                        Buffer::new_filled((width, height), ' '),
+                        Buffer::new_filled((width, height), ' '),
+                    ];
+                    self.just_resized = true;
+                }
+            }
+            Event::Mouse(MouseEvent { column, row, .. }) => self.mouse_pos = vec2(column, row),
+            _ => {}
+        }
+
         self.events.push(event);
     }
 
