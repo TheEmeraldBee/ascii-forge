@@ -414,6 +414,12 @@ impl Window {
         self.events.push(event);
     }
 
+    /// Clears events, usefull for handling issues with
+    /// custom event insertions or handlers
+    pub fn clear_events(&mut self) {
+        self.events.clear();
+    }
+
     /// Returns the current event for the frame, as a reference.
     pub fn events(&self) -> &Vec<Event> {
         &self.events
