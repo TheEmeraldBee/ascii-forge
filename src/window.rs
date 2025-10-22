@@ -407,6 +407,13 @@ impl Window {
         self.mouse_pos
     }
 
+    /// Pushes an event into the state
+    /// Could be usefull with a custom event loop
+    /// or for keyboard control from elsewhere
+    pub fn insert_event(&mut self, event: Event) {
+        self.events.push(event);
+    }
+
     /// Returns the current event for the frame, as a reference.
     pub fn events(&self) -> &Vec<Event> {
         &self.events
