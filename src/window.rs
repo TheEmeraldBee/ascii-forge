@@ -49,6 +49,7 @@ pub struct Window {
     cursor_visible: bool,
     cursor: Vec2,
     cursor_style: SetCursorStyle,
+    cursor_dirty: bool,
 
     // Input Helpers,
     mouse_pos: Vec2,
@@ -80,6 +81,7 @@ impl Window {
             cursor_visible: false,
             cursor_style: SetCursorStyle::SteadyBlock,
             cursor: vec2(0, 0),
+            cursor_dirty: false,
             mouse_pos: vec2(0, 0),
             inline: None,
             just_resized: false,
@@ -98,6 +100,7 @@ impl Window {
             cursor_visible: false,
             cursor_style: SetCursorStyle::SteadyBlock,
             cursor: vec2(0, 0),
+            cursor_dirty: false,
             mouse_pos: vec2(0, 0),
             inline: Some(Inline::default()),
             just_resized: false,
@@ -255,6 +258,8 @@ impl Window {
                     ),
                     Print(cell),
                 )?;
+
+                self.cursor_dirty = true;
             }
 
             queue!(
@@ -275,6 +280,8 @@ impl Window {
                             .get((x, y))
                             .expect("Cell should be in bounds");
                         queue!(self.io, cursor::MoveTo(x, y), Print(cell))?;
+
+                        self.cursor_dirty = true;
                     }
                 }
             }
@@ -283,6 +290,8 @@ impl Window {
                 self.buffers[1 - self.active_buffer].diff(&self.buffers[self.active_buffer])
             {
                 queue!(self.io, cursor::MoveTo(loc.x, loc.y), Print(cell))?;
+
+                self.cursor_dirty = true;
             }
         }
         Ok(())
@@ -306,7 +315,9 @@ impl Window {
         if self.cursor_style != self.last_cursor.2
             || self.cursor != self.last_cursor.1
             || self.cursor_visible != self.last_cursor.0
+            || self.cursor_dirty
         {
+            self.cursor_dirty = false;
             if self.cursor_visible {
                 let cursor = self.cursor;
                 let style = self.cursor_style;
