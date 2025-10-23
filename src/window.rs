@@ -122,6 +122,7 @@ impl Window {
             EnterAlternateScreen,
             EnableMouseCapture,
             EnableFocusChange,
+            EnableBracketedPaste,
             Hide,
             DisableLineWrap,
         )?;
@@ -186,6 +187,7 @@ impl Window {
                 self.io,
                 DisableMouseCapture,
                 DisableFocusChange,
+                DisableBracketedPaste,
                 PopKeyboardEnhancementFlags,
                 Show,
             )?;
@@ -204,6 +206,7 @@ impl Window {
                 LeaveAlternateScreen,
                 DisableMouseCapture,
                 DisableFocusChange,
+                DisableBracketedPaste,
                 Show,
                 EnableLineWrap,
             )?;
@@ -224,6 +227,7 @@ impl Window {
                     self.io,
                     EnableMouseCapture,
                     EnableFocusChange,
+                    EnableBracketedPaste,
                     DisableLineWrap,
                     Hide,
                 )?;
@@ -299,9 +303,7 @@ impl Window {
 
     pub fn render_cursor(&mut self) -> io::Result<()> {
         // Get the current cursor position
-        let cursor_pos = cursor::position()?;
         if self.cursor_style != self.last_cursor.2
-            || self.cursor != cursor_pos.into()
             || self.cursor != self.last_cursor.1
             || self.cursor_visible != self.last_cursor.0
         {

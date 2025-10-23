@@ -14,11 +14,19 @@ fn main() -> Result<(), Box<dyn Error>> {
             event = new_event.clone();
         }
 
-        render!(
-            window,
-                vec2(0, 20) => [ "To Quit, Press Ctrl + C".red() ],
-                vec2(0, 0) => [ format!("{:#?}", event).replace('\t', "   ") ],
-        );
+        if let Event::Paste(_) = &event {
+            render!(
+                window,
+                    vec2(0, 20) => [ "To Quit, Press Ctrl + C".red() ],
+                    vec2(0, 0) => [ format!("Paste!") ],
+            );
+        } else {
+            render!(
+                window,
+                    vec2(0, 20) => [ "To Quit, Press Ctrl + C".red() ],
+                    vec2(0, 0) => [ format!("{:#?}", event).replace('\t', "   ") ],
+            );
+        }
 
         if event!(window, Event::Key(e) =>
             *e == KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL)
